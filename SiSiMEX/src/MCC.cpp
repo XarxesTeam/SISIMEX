@@ -26,13 +26,23 @@ MCC::~MCC()
 
 void MCC::start()
 {
-	// TODO: Set the initial state
+	/// TODO: Set the initial state
+	setState(State::ST_INIT);
 }
 
 void MCC::update()
 {
 	switch (state())
 	{
+	case ST_REGISTERING:
+		registerIntoYellowPages();
+		setState(State::ST_IDLE);
+		break;
+	case ST_UNREGISTERING:
+		unregisterFromYellowPages();
+		setState(State::ST_IDLE);
+		break;
+		
 		// TODO:
 		// - Register or unregister into/from YellowPages depending on the state
 		//       Use the functions registerIntoYellowPages and unregisterFromYellowPages
@@ -54,8 +64,9 @@ void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 	if (state() == ST_REGISTERING && packetHeader.packetType == PacketType::RegisterMCCAck)
 	{
 		// TODO: Set the next state (Idle in this case)
-
+		setState(State::ST_IDLE);
 		// TODO: Disconnect the socket (we don't need it anymore)
+
 	}
 
 	// TODO: Do the same for unregistering
