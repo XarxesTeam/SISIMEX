@@ -33,18 +33,55 @@ public:
 		srcAgentId(NULL_AGENT_ID),
 		dstAgentId(NULL_AGENT_ID)
 	{ }
-	void Read(InputMemoryStream &stream) {
-		// TODO: Deserialize fields
+	void Read(InputMemoryStream &stream) 
+	{
+		/// TODO: Deserialize fields
+		stream.Read(packetType);
+		stream.Read(srcAgentId);
+		stream.Read(dstAgentId);
 	}
 	void Write(OutputMemoryStream &stream) {
-		// TODO: Serialize fields
+		/// TODO: Serialize fields
+		stream.Write(packetType);
+		stream.Write(srcAgentId);
+		stream.Write(dstAgentId);
 	}
 };
 
 // TODO: PacketRegisterMCC
+class PacketRegisterMCC
+{
+public:
+	uint16_t itemId;
+
+	void Read(InputMemoryStream& stream)
+	{
+		stream.Read(itemId);
+	}
+
+	void Write(OutputMemoryStream& stream)
+	{
+		stream.Write(itemId);
+	}
+};
 
 // TODO: PacketRegisterMCCAck   <-- Do we need an actual data packet? Think...
 
 // TODO: PacketUnregisterMCC
+class PacketUnregisterMCC
+{
+public:
+	uint16_t itemId;
+
+	void Read(InputMemoryStream& stream)
+	{
+		stream.Read(itemId);
+	}
+
+	void Write(OutputMemoryStream& stream)
+	{
+		stream.Write(itemId);
+	}
+};
 
 // TODO: PacketUnregisterMCCAck <-- Do we need an actual data packet? Think...
