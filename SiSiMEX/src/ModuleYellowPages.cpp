@@ -175,7 +175,7 @@ void ModuleYellowPages::OnPacketReceived(TCPSocketPtr socket, InputMemoryStream 
 		outputPacket.dstAgentId = inPacketHead.srcAgentId;
 		outputPacket.srcAgentId = NULL_AGENT_ID;
 		outputPacket.Write(outStream);
-		socket->SendPacket(&outStream, sizeof(outStream));
+		socket->SendPacket(outStream.GetBufferPtr(), outStream.GetSize());
 	}
 	else if (inPacketHead.packetType == PacketType::UnregisterMCC)
 	{
@@ -215,7 +215,7 @@ void ModuleYellowPages::OnPacketReceived(TCPSocketPtr socket, InputMemoryStream 
 		outputPacket.dstAgentId = inPacketHead.srcAgentId;
 		outputPacket.srcAgentId = NULL_AGENT_ID;
 		outputPacket.Write(outStream);
-		socket->SendPacket(&outStream, sizeof(outStream));
+		socket->SendPacket(outStream.GetBufferPtr(), outStream.GetSize());
 	}
 }
 

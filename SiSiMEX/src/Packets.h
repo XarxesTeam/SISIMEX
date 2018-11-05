@@ -48,7 +48,7 @@ public:
 	}
 };
 
-// TODO: PacketRegisterMCC
+/// TODO: PacketRegisterMCC
 class PacketRegisterMCC
 {
 public:
@@ -65,9 +65,9 @@ public:
 	}
 };
 
-// TODO: PacketRegisterMCCAck   <-- Do we need an actual data packet? Think...
+/// TODO: PacketRegisterMCCAck   <-- Do we need an actual data packet? Think...
 
-// TODO: PacketUnregisterMCC
+/// TODO: PacketUnregisterMCC
 class PacketUnregisterMCC
 {
 public:
@@ -84,4 +84,4 @@ public:
 	}
 };
 
-// TODO: PacketUnregisterMCCAck <-- Do we need an actual data packet? Think...
+/// TODO: PacketUnregisterMCCAck <-- Do we need an actual data packet? Think...
