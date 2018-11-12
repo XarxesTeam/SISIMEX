@@ -205,6 +205,44 @@ void ModuleYellowPages::OnPacketReceived(TCPSocketPtr socket, InputMemoryStream 
 	}
 
 	// TODO: Handle packet type PacketType::QueryMCCsForItem
+	else if (inPacketHead.packetType == PacketType::QueryMCCsForItem)
+	{
+		iLog << "PacketType::QueryMCCsForItem";
+
+		// Read the packet
+		PacketQueryMCCsForItem inPacketData;
+		inPacketData.Read(stream);
+
+		PacketReturnMCCsForItem outPacketData;
+
+		// Look for mccs that offer the desired item
+		for (auto it = _mccByItem.begin(); it != _mccByItem.end(); it++)
+		{
+			if (it->first == inPacketData.itemId)
+			{
+				for (auto itMCCs = it->second.begin(); itMCCs != it->second.end(); itMCCs++)
+				{
+					outPacketData.mccRegisterIndex = itMCCs->agentId;
+					outPacketData.mccContributedItemId = inPacketData.itemId;
+					outPacketData.mccRequestedItemId = NULL_ITEM_ID;
+					outPacketData.mccRegisters.push_back(itMCCs._Ptr->_Myval);
+				}
+			}
+		}
+
+		// Send ReturnMCCsForItem packet
+		OutputMemoryStream outStream;
+		PacketHeader outPacket;
+		outPacket.packetType = PacketType::ReturnMCCsForItem;
+		outPacket.dstAgentId = inPacketHead.srcAgentId;
+		outPacket.srcAgentId = NULL_AGENT_ID;
+		outPacket.Write(outStream);
+
+		outPacketData.Write(outStream);
+
+		socket->SendPacket(outStream.GetBufferPtr(), outStream.GetSize());
+	}
+
 }
 
 void ModuleYellowPages::OnDisconnected(TCPSocketPtr socket)

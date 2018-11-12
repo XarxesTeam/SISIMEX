@@ -52,9 +52,15 @@ void MCP::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 
 		// TODO:
 		// 1) Deserialize the packet
+		PacketReturnMCCsForItem returnMCCsForItem;
+		returnMCCsForItem.Read(stream);
 		// 2) Log the received MCC agent locations
+		for (int i = 0; i < returnMCCsForItem.mccRegisters.size(); i++)
+			iLog << "returnMCCsForItem mccRegisters " << returnMCCsForItem.mccRegisters[i].agentId;
 		// 3) Disconnect the socket
+		socket->Disconnect();
 		// 4) Set the next state (ST_ITERATING_OVER_MCCs) to start the search (for the next session)
+		setState(ST_ITERATING_OVER_MCCs);
 	}
 }
 
@@ -73,7 +79,18 @@ bool MCP::queryMCCsForItem(int itemId)
 {
 	// TODO:
 	// 1) Create a query packet and fill it
+	OutputMemoryStream stream;
+	PacketHeader packetHeader;
+	packetHeader.packetType = PacketType::QueryMCCsForItem;
+	packetHeader.srcAgentId = id();
+	packetHeader.dstAgentId = NULL_AGENT_ID;
+	packetHeader.Write(stream);
+
+	PacketQueryMCCsForItem queryPacket;
+	queryPacket.itemId = itemId;
 	// 2) Serialize it into an output stream
+	queryPacket.Write(stream);
 	// 3) Send it to the yellow pages (sendPacketToYellowPages() method)
+	sendPacketToYellowPages(stream);
 	return true;
 }

@@ -490,11 +490,10 @@ void ModuleNodeCluster::spawnMCP(int nodeId, int requestedItemId, int contribute
 	iLog << "Spawn MCP for node " << nodeId << " petitioning item " << requestedItemId << " in exchange of item " << contributedItemId;
 	if (nodeId >= 0 && nodeId < (int)_nodes.size()) {
 
-		// Done for you ;-)
 		// Here we simply create the MCP agent using the agent container module, specifying:
 		// 1) The item it requests
 		// 2) The item it provides
-		// and finally insets it into a list to track its lifetime in the ModuleNodeCluster::runSystem() method
+		// and finally inserts it into a list to track its lifetime in the ModuleNodeCluster::runSystem() method
 
 		NodePtr node = _nodes[nodeId];
 		MCPPtr mcp = App->agentContainer->createMCP(node.get(), requestedItemId, contributedItemId);

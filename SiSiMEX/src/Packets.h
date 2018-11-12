@@ -79,6 +79,19 @@ using PacketUnregisterMCC = PacketRegisterMCC;
  * The information is the same required for PacketRegisterMCC so...
  */
 // TODO
+class PacketQueryMCCsForItem
+{
+public:
+	uint16_t itemId;
+	void Read(InputMemoryStream &stream) 
+	{
+		stream.Read(itemId);
+	}
+	void Write(OutputMemoryStream &stream) 
+	{
+		stream.Write(itemId);
+	}
+};
 
 /**
  * class PacketReturnMCCsForItem
@@ -88,3 +101,35 @@ using PacketUnregisterMCC = PacketRegisterMCC;
  * with the item specified by the PacketQueryMCCsForItem.
  */
 // TODO
+class PacketReturnMCCsForItem
+{
+public:
+	int mccRegisterIndex;
+	uint16_t mccRequestedItemId;
+	uint16_t mccContributedItemId;
+	std::vector<AgentLocation> mccRegisters;
+
+	void Read(InputMemoryStream &stream)
+	{
+		stream.Read(mccRegisterIndex);
+		stream.Read(mccRequestedItemId);
+		stream.Read(mccContributedItemId);
+		int size = 0;
+		stream.Read(size);
+		for (int i = 0; i < size; i++)
+		{
+			AgentLocation newAgent;
+			mccRegisters.push_back(newAgent);
+			mccRegisters[i].Read(stream);
+		}
+	}
+	void Write(OutputMemoryStream &stream)
+	{
+		stream.Write(mccRegisterIndex);
+		stream.Write(mccRequestedItemId);
+		stream.Write(mccContributedItemId);
+		stream.Write((int)mccRegisters.size());
+		for (int i = 0; i < mccRegisters.size(); i++)
+			mccRegisters[i].Write(stream);
+	}
+};
