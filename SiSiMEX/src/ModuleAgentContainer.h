@@ -6,9 +6,12 @@
 
 class Node;
 class Agent;
-using AgentPtr = std::shared_ptr<Agent>;
+class AgentLocation;
 class MCC;
+class MCP;
+using AgentPtr = std::shared_ptr<Agent>;
 using MCCPtr = std::shared_ptr<MCC>;
+using MCPPtr = std::shared_ptr<MCP>;
 
 class ModuleAgentContainer : public Module
 {
@@ -20,6 +23,7 @@ public:
 
 	// Agent creation methods
 	MCCPtr createMCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId);
+	MCPPtr createMCP(Node *node, uint16_t petitionedItemId, uint16_t contributedItemId);
 
 	// Getters
 	AgentPtr getAgent(int agentId);
@@ -31,8 +35,11 @@ public:
 	// Post update
 	bool postUpdate() override;
 
-	// Finalize
+	// Tell all agents to stop
 	bool stop() override;
+
+	// Remove all agents from memory
+	bool cleanUp() override;
 
 private:
 

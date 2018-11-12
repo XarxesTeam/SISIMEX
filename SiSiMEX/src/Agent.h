@@ -1,7 +1,6 @@
 #pragma once
 #include "Globals.h"
 #include "Log.h"
-#include "Item.h"
 #include "Packets.h"
 #include "Node.h"
 #include <list>
@@ -21,7 +20,7 @@ public:
 
 	// Lifetime methods ///////////////////////////////////////////////
 	
-	virtual void start() = 0;  // Called after creating the agent
+	virtual void start() { }   // Called after creating the agent
 	
 	virtual void update() = 0; // Called once per frame
 

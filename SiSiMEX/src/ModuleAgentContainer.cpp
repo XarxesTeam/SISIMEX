@@ -1,5 +1,6 @@
 #include "ModuleAgentContainer.h"
 #include "MCC.h"
+#include "MCP.h"
 
 
 ModuleAgentContainer::ModuleAgentContainer()
@@ -15,6 +16,13 @@ MCCPtr ModuleAgentContainer::createMCC(Node *node, uint16_t contributedItemId, u
 	MCCPtr mcc(new MCC(node, contributedItemId, constraintItemId));
 	addAgent(mcc);
 	return mcc;
+}
+
+MCPPtr ModuleAgentContainer::createMCP(Node *node, uint16_t petitionedItemId, uint16_t contributedItemId)
+{
+	MCPPtr mcp(new MCP(node, petitionedItemId, contributedItemId));
+	addAgent(mcp);
+	return mcp;
 }
 
 void ModuleAgentContainer::addAgent(AgentPtr agent)
@@ -85,6 +93,12 @@ bool ModuleAgentContainer::stop()
 	for (auto agent : _agents) {
 		agent->stop();
 	}
+
+	return true;
+}
+
+bool ModuleAgentContainer::cleanUp()
+{
 	_agents.clear();
 
 	return true;

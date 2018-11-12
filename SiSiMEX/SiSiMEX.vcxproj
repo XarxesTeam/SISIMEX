@@ -130,10 +130,11 @@
     <ClCompile Include="src\imgui\imgui_impl_dx9.cpp" />
     <ClCompile Include="src\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="src\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="src\Item.cpp" />
+    <ClCompile Include="src\ItemList.cpp" />
     <ClCompile Include="src\Log.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\MCC.cpp" />
+    <ClCompile Include="src\MCP.cpp" />
     <ClCompile Include="src\ModuleAgentContainer.cpp" />
     <ClCompile Include="src\ModuleNodeCluster.cpp" />
     <ClCompile Include="src\ModuleLogView.cpp" />
@@ -163,9 +164,10 @@
     <ClInclude Include="src\imgui\imstb_rectpack.h" />
     <ClInclude Include="src\imgui\imstb_textedit.h" />
     <ClInclude Include="src\imgui\imstb_truetype.h" />
-    <ClInclude Include="src\Item.h" />
+    <ClInclude Include="src\ItemList.h" />
     <ClInclude Include="src\Log.h" />
     <ClInclude Include="src\MCC.h" />
+    <ClInclude Include="src\MCP.h" />
     <ClInclude Include="src\Module.h" />
     <ClInclude Include="src\ModuleAgentContainer.h" />
     <ClInclude Include="src\ModuleNodeCluster.h" />

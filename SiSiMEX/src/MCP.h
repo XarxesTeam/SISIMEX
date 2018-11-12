@@ -1,14 +1,14 @@
 #pragma once
 #include "Agent.h"
 
-class MCC :
+class MCP :
 	public Agent
 {
 public:
 
 	// Constructor and destructor
-	MCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId = NULL_ITEM_ID);
-	~MCC();
+	MCP(Node *node, uint16_t requestedItemID, uint16_t contributedItemID);
+	~MCP();
 
 	// Agent methods
 	void update() override;
@@ -16,8 +16,8 @@ public:
 	void OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader, InputMemoryStream &stream) override;
 
 	// Getters
+	uint16_t requestedItemId() const { return _requestedItemId; }
 	uint16_t contributedItemId() const { return _contributedItemId; }
-	uint16_t constraintItemId() const { return _constraintItemId; }
 
 	// Whether or not the negotiation finished
 	bool negotiationFinished() const;
@@ -27,10 +27,14 @@ public:
 
 private:
 
-	bool registerIntoYellowPages();
-	
-	void unregisterFromYellowPages();
+	bool queryMCCsForItem(int itemId);
 
-	uint16_t _contributedItemId; /**< The contributed item. */
-	uint16_t _constraintItemId; /**< The constraint item. */
+	uint16_t _requestedItemId;
+	uint16_t _contributedItemId;
+
+	int _mccRegisterIndex; /**< Iterator through _mccRegisters. */
+	std::vector<AgentLocation> _mccRegisters; /**< MCCs returned by the YP. */
+
+	bool _negotiationAgreement; /**< Was there a negotiation agreement? */
 };
+
