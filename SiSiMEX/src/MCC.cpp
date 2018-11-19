@@ -1,15 +1,17 @@
 #include "MCC.h"
+#include "UCC.h"
 #include "Application.h"
 #include "ModuleAgentContainer.h"
+
 
 enum State
 {
 	ST_INIT,
 	ST_REGISTERING,
 	ST_IDLE,
-	ST_NEGOTIATING,
-	ST_NEGOTIATION_FINISHED,
-	ST_UNREGISTERING,
+	
+	// TODO: Other states
+
 	ST_FINISHED
 };
 
@@ -33,16 +35,18 @@ void MCC::update()
 	case ST_INIT:
 		if (registerIntoYellowPages()) {
 			setState(ST_REGISTERING);
-		} else {
+		}
+		else {
 			setState(ST_FINISHED);
 		}
 		break;
+
 	case ST_REGISTERING:
 		// See OnPacketReceived()
 		break;
-	case ST_UNREGISTERING:
-		// See OnPacketReceived()
-		break;
+
+		// TODO: Handle other states
+
 	case ST_FINISHED:
 		destroy();
 	}
@@ -50,32 +54,54 @@ void MCC::update()
 
 void MCC::stop()
 {
+	// Destroy hierarchy below this agent (only a UCC, actually)
+	destroyChildUCC();
+
 	unregisterFromYellowPages();
-	setState(ST_UNREGISTERING);
+	setState(ST_FINISHED);
 }
 
 
 void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader, InputMemoryStream &stream)
 {
 	const PacketType packetType = packetHeader.packetType;
-	if (state() == ST_REGISTERING && packetType == PacketType::RegisterMCCAck) {
-		setState(ST_IDLE);
-		socket->Disconnect();
+
+	switch (packetType)
+	{
+	case PacketType::RegisterMCCAck:
+		if (state() == ST_REGISTERING)
+		{
+			setState(ST_IDLE);
+			socket->Disconnect();
+		}
+		else
+		{
+			wLog << "OnPacketReceived() - PacketType::RegisterMCCAck was unexpected.";
+		}
+		break;
+
+	// TODO: Handle other packets
+
+	default:
+		wLog << "OnPacketReceived() - Unexpected PacketType.";
 	}
-	else if (state() == ST_UNREGISTERING && packetType == PacketType::UnregisterMCCAck) {
-		setState(ST_FINISHED);
-		socket->Disconnect();
-	}
+}
+
+bool MCC::isIdling() const
+{
+	return state() == ST_IDLE;
 }
 
 bool MCC::negotiationFinished() const
 {
-	return state() == ST_NEGOTIATION_FINISHED;
+	return state() == ST_FINISHED;
 }
 
 bool MCC::negotiationAgreement() const
 {
-	return state() == ST_NEGOTIATION_FINISHED;
+	// If this agent finished, means that it was an agreement
+	// Otherwise, it would return to state ST_IDLE
+	return negotiationFinished();
 }
 
 bool MCC::registerIntoYellowPages()
@@ -112,4 +138,14 @@ void MCC::unregisterFromYellowPages()
 	packetData.Write(stream);
 
 	sendPacketToYellowPages(stream);
+}
+
+void MCC::createChildUCC()
+{
+	// TODO: Create a unicast contributor
+}
+
+void MCC::destroyChildUCC()
+{
+	// TODO: Destroy the unicast contributor child
 }

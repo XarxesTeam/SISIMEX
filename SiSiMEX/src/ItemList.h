@@ -1,12 +1,6 @@
 #pragma once
 
-/**
- * This constant defines which is the maximum number of
- * items of the catalogue. Items will be identified by an
- * index between 0 and MAX_ITEMS - 1.
- */
-//static const int MAX_ITEMS = 30U;
-static const int MAX_ITEMS = 4U;
+#include "Globals.h"
 
 /*
  * Type alias for item identifiers.

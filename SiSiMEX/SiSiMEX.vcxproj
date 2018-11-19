@@ -123,7 +123,6 @@
   <ItemGroup>
     <ClCompile Include="src\Agent.cpp" />
     <ClCompile Include="src\Application.cpp" />
-    <ClCompile Include="src\Globals.cpp" />
     <ClCompile Include="src\imgui\imgui.cpp" />
     <ClCompile Include="src\imgui\imgui_demo.cpp" />
     <ClCompile Include="src\imgui\imgui_draw.cpp" />
@@ -140,6 +139,7 @@
     <ClCompile Include="src\ModuleLogView.cpp" />
     <ClCompile Include="src\ModuleMainMenu.cpp" />
     <ClCompile Include="src\ModuleNetworkManager.cpp" />
+    <ClCompile Include="src\ModuleTextures.cpp" />
     <ClCompile Include="src\ModuleYellowPages.cpp" />
     <ClCompile Include="src\ModuleWindow.cpp" />
     <ClCompile Include="src\net\MemoryStream.cpp" />
@@ -150,6 +150,8 @@
     <ClCompile Include="src\net\TCPSocket.cpp" />
     <ClCompile Include="src\net\UDPSocket.cpp" />
     <ClCompile Include="src\Node.cpp" />
+    <ClCompile Include="src\UCC.cpp" />
+    <ClCompile Include="src\UCP.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Agent.h" />
@@ -174,6 +176,7 @@
     <ClInclude Include="src\ModuleLogView.h" />
     <ClInclude Include="src\ModuleMainMenu.h" />
     <ClInclude Include="src\ModuleNetworkManager.h" />
+    <ClInclude Include="src\ModuleTextures.h" />
     <ClInclude Include="src\ModuleYellowPages.h" />
     <ClInclude Include="src\ModuleWindow.h" />
     <ClInclude Include="src\net\ByteSwap.h" />
@@ -187,6 +190,8 @@
     <ClInclude Include="src\net\UDPSocket.h" />
     <ClInclude Include="src\Node.h" />
     <ClInclude Include="src\Packets.h" />
+    <ClInclude Include="src\UCC.h" />
+    <ClInclude Include="src\UCP.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

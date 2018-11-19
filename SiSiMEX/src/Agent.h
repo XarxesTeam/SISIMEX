@@ -6,6 +6,12 @@
 #include <list>
 #include <memory>
 
+// Concrete agent declarations
+class MCC;
+class MCP;
+class UCC;
+class UCP;
+
 
 class Agent
 {
@@ -25,6 +31,15 @@ public:
 	virtual void update() = 0; // Called once per frame
 
 	virtual void stop() = 0;   // Called before destroying the agent
+	
+							   
+	// Fast casts /////////////////////////////////////////////////////
+
+	virtual MCC* asMCC() { return nullptr; }
+	virtual MCP* asMCP() { return nullptr; }
+	virtual UCC* asUCC() { return nullptr; }
+	virtual UCP* asUCP() { return nullptr; }
+
 
 
 	// State machine //////////////////////////////////////////////////
