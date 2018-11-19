@@ -19,7 +19,9 @@ enum class PacketType
 	ReturnMCCsForItem,
 	
 	// MCP <-> MCC
-	// TODO
+	/// TODO
+	NegotiationMCPPetition,
+	MCCNegotiationResponse,
 	
 	// UCP <-> UCC
 	// TODO
@@ -110,8 +112,22 @@ public:
 
 // MCP <-> MCC
 
-//TODO
+///TODO
 
+class PacketMCCNegotiationResponse
+{
+public:
+	bool accepted;
+
+	void Read(InputMemoryStream &stream)
+	{
+		stream.Read(accepted);
+	}
+	void Write(OutputMemoryStream &stream)
+	{
+		stream.Write(accepted);
+	}
+};
 
 
 // UCP <-> UCC

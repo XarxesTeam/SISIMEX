@@ -11,6 +11,8 @@ enum State
 	ST_ITERATING_OVER_MCCs,
 
 	// TODO: Other states
+	ST_WAITING_MCCs_RESPONSE,
+	ST_NEGOTIATING,
 
 	ST_NEGOTIATION_FINISHED
 };
@@ -19,7 +21,8 @@ MCP::MCP(Node *node, uint16_t requestedItemID, uint16_t contributedItemID, unsig
 	Agent(node),
 	_requestedItemId(requestedItemID),
 	_contributedItemId(contributedItemID),
-	_searchDepth(searchDepth)
+	_searchDepth(searchDepth),
+	_mccRegisterIndex(0)
 {
 	setState(ST_INIT);
 }
@@ -33,15 +36,49 @@ void MCP::update()
 	switch (state())
 	{
 	case ST_INIT:
+		_mccRegisterIndex = 0;
 		queryMCCsForItem(_requestedItemId);
 		setState(ST_REQUESTING_MCCs);
 		break;
 
 	case ST_ITERATING_OVER_MCCs:
-		// TODO: Handle this state
-		break;
+	{
+		/// TODO: Handle this state
+		AgentLocation curr = _mccRegisters[_mccRegisterIndex];
+		OutputMemoryStream stream;
 
-	// TODO: Handle other states
+		PacketHeader packetHead;
+		packetHead.srcAgentId = id();
+		packetHead.dstAgentId = curr.agentId;
+		packetHead.packetType = PacketType::NegotiationMCPPetition;
+		packetHead.Write(stream);
+
+		sendPacketToAgent(curr.hostIP, curr.hostPort, stream);
+
+		setState(ST_WAITING_MCCs_RESPONSE);
+	}
+	break;
+
+		/// TODO: Handle other states
+	case ST_WAITING_MCCs_RESPONSE:
+	{
+		InputMemoryStream stream;
+		PacketHeader packetHead;
+		packetHead.Read(stream);
+		if (packetHead.packetType == PacketType::MCCNegotiationResponse)
+		{
+			PacketMCCNegotiationResponse packetData;
+			packetData.Read(stream);
+			if (packetData.accepted)
+				setState(ST_NEGOTIATING);
+			else
+			{
+				setState(ST_ITERATING_OVER_MCCs);
+				_mccRegisterIndex++;
+			}
+		}
+	}
+	break;
 
 	default:;
 	}

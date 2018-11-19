@@ -1,5 +1,6 @@
 #include "ModuleWindow.h"
 #include "Application.h"
+#include "ModuleTextures.h"
 
 #pragma comment (lib, "D3D9.lib")
 
@@ -36,12 +37,14 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
 		{
 			ImGui_ImplDX9_InvalidateDeviceObjects();
+			App->modTextures->cleanUp();
 			g_d3dpp.BackBufferWidth = LOWORD(lParam);
 			g_d3dpp.BackBufferHeight = HIWORD(lParam);
 			HRESULT hr = g_pd3dDevice->Reset(&g_d3dpp);
 			if (hr == D3DERR_INVALIDCALL)
 				IM_ASSERT(0);
 			ImGui_ImplDX9_CreateDeviceObjects();
+			App->modTextures->init();
 		}
 		return 0;
 	case WM_SYSCOMMAND:

@@ -10,7 +10,7 @@ enum State
 	ST_REGISTERING,
 	ST_IDLE,
 	
-	// TODO: Other states
+	/// TODO: Other states
 
 	ST_FINISHED
 };
@@ -82,6 +82,32 @@ void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 
 	// TODO: Handle other packets
 
+	case PacketType::NegotiationMCPPetition:
+	{			
+		
+		PacketHeader packetHead;
+		packetHead.dstAgentId = packetHeader.srcAgentId;
+		packetHead.srcAgentId = packetHeader.dstAgentId;
+		packetHead.packetType = PacketType::MCCNegotiationResponse;
+
+		PacketMCCNegotiationResponse mccResponse;
+		
+		if (state() == ST_IDLE)
+		{
+			OutputMemoryStream stream;
+			mccResponse.accepted = true;
+			mccResponse.Write(stream);
+			socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
+		}
+		else
+		{
+			OutputMemoryStream stream;
+			mccResponse.accepted = false;
+			mccResponse.Write(stream);
+			socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
+		}
+	}
+	break;
 	default:
 		wLog << "OnPacketReceived() - Unexpected PacketType.";
 	}

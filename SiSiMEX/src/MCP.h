@@ -40,7 +40,7 @@ private:
 	uint16_t _requestedItemId;
 	uint16_t _contributedItemId;
 
-	int _mccRegisterIndex; /**< Iterator through _mccRegisters. */
+	int _mccRegisterIndex = 0; /**< Iterator through _mccRegisters. */
 	std::vector<AgentLocation> _mccRegisters; /**< MCCs returned by the YP. */
 
 	unsigned int _searchDepth;
