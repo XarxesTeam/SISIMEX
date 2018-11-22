@@ -80,7 +80,7 @@ void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 		}
 		break;
 
-	// TODO: Handle other packets
+	/// TODO: Handle other packets
 
 	case PacketType::NegotiationMCPPetition:
 	{			
