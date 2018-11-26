@@ -44,17 +44,22 @@ void MCP::update()
 	case ST_ITERATING_OVER_MCCs:
 	{
 		/// TODO: Handle this state
-		AgentLocation curr = _mccRegisters[_mccRegisterIndex];
-		OutputMemoryStream stream;
+		if (_mccRegisters.size() > 0)
+		{
+			AgentLocation curr = _mccRegisters[_mccRegisterIndex];
+			OutputMemoryStream stream;
 
-		PacketHeader packetHead;
-		packetHead.srcAgentId = id();
-		packetHead.dstAgentId = curr.agentId;
-		packetHead.packetType = PacketType::NegotiationMCPPetition;
-		packetHead.Write(stream);
+			PacketHeader packetHead;
+			packetHead.srcAgentId = id();
+			packetHead.dstAgentId = curr.agentId;
+			packetHead.packetType = PacketType::NegotiationMCPPetition;
+			packetHead.Write(stream);
 
-		sendPacketToAgent(curr.hostIP, curr.hostPort, stream);
-
+			sendPacketToAgent(curr.hostIP, curr.hostPort, stream);
+			iLog << "Negotiation Petition Sent to MCCs";
+		}
+		else
+			wLog << "No MCCs Registered";
 		setState(ST_WAITING_MCCs_RESPONSE);
 	}
 	break;
@@ -62,21 +67,7 @@ void MCP::update()
 		/// TODO: Handle other states
 	case ST_WAITING_MCCs_RESPONSE:
 	{
-		InputMemoryStream stream;
-		PacketHeader packetHead;
-		packetHead.Read(stream);
-		if (packetHead.packetType == PacketType::MCCNegotiationResponse)
-		{
-			PacketMCCNegotiationResponse packetData;
-			packetData.Read(stream);
-			if (packetData.accepted)
-				setState(ST_NEGOTIATING);
-			else
-			{
-				setState(ST_ITERATING_OVER_MCCs);
-				_mccRegisterIndex++;
-			}
-		}
+		
 	}
 	break;
 
@@ -128,8 +119,29 @@ void MCP::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 		}
 		break;
 
-	// TODO: Handle other packets
+		// TODO: Handle other packets
+	case PacketType::MCCNegotiationResponse:
+	{
+		InputMemoryStream stream;
+		PacketHeader packetHead;
+		packetHead.Read(stream);
 
+		PacketMCCNegotiationResponse packetData;
+		packetData.Read(stream);
+		if (packetData.accepted)
+		{
+			iLog << "MCP Starting Negotiation";
+			createChildUCP(packetData.uccAgent);
+			setState(ST_NEGOTIATING);
+		}
+		else
+		{
+			setState(ST_ITERATING_OVER_MCCs);
+			_mccRegisterIndex++;
+		}
+	}
+		break;
+	
 	default:
 		wLog << "OnPacketReceived() - Unexpected PacketType.";
 	}
@@ -163,4 +175,10 @@ bool MCP::queryMCCsForItem(int itemId)
 
 	// 1) Ask YP for MCC hosting the item 'itemId'
 	return sendPacketToYellowPages(stream);
+}
+
+void MCP::createChildUCP(AgentLocation& uccAgent)
+{
+	iLog << "UCP Created";
+	App->agentContainer->createUCP(node(), requestedItemId(), contributedItemId(), uccAgent, searchDepth());
 }

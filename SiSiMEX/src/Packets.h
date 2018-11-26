@@ -118,14 +118,17 @@ class PacketMCCNegotiationResponse
 {
 public:
 	bool accepted;
+	AgentLocation uccAgent;
 
 	void Read(InputMemoryStream &stream)
 	{
 		stream.Read(accepted);
+		uccAgent.Read(stream);
 	}
 	void Write(OutputMemoryStream &stream)
 	{
 		stream.Write(accepted);
+		uccAgent.Write(stream);
 	}
 };
 

@@ -10,7 +10,8 @@ enum State
 	ST_REGISTERING,
 	ST_IDLE,
 	
-	/// TODO: Other states
+	// TODO: Other states
+	ST_NEGOTIATING,
 
 	ST_FINISHED
 };
@@ -46,6 +47,9 @@ void MCC::update()
 		break;
 
 		// TODO: Handle other states
+	case ST_NEGOTIATING:
+		// Do nothing ?
+		break;
 
 	case ST_FINISHED:
 		destroy();
@@ -84,28 +88,35 @@ void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 
 	case PacketType::NegotiationMCPPetition:
 	{			
-		
+		iLog << "MCC: NegotiationMCPPetition received";
+		OutputMemoryStream stream;
 		PacketHeader packetHead;
 		packetHead.dstAgentId = packetHeader.srcAgentId;
 		packetHead.srcAgentId = packetHeader.dstAgentId;
 		packetHead.packetType = PacketType::MCCNegotiationResponse;
+		packetHead.Write(stream);
 
-		PacketMCCNegotiationResponse mccResponse;
-		
+		PacketMCCNegotiationResponse mccResponsePacket;
+
 		if (state() == ST_IDLE)
 		{
-			OutputMemoryStream stream;
-			mccResponse.accepted = true;
-			mccResponse.Write(stream);
-			socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
+			AgentLocation uccAgent;
+			mccResponsePacket.accepted = true;
+			createChildUCC();
+			uccAgent.agentId = _ucc->id();
+			// TODO: uccAgent hosts and IP ?????
+			mccResponsePacket.uccAgent = uccAgent;
+			setState(ST_NEGOTIATING);
+			iLog << "Starting negotiating";
 		}
 		else
 		{
-			OutputMemoryStream stream;
-			mccResponse.accepted = false;
-			mccResponse.Write(stream);
-			socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
+			mccResponsePacket.accepted = false;
+			iLog << "MCC can't negotiate now";
 		}
+
+		mccResponsePacket.Write(stream);
+		socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
 	}
 	break;
 	default:
@@ -168,7 +179,9 @@ void MCC::unregisterFromYellowPages()
 
 void MCC::createChildUCC()
 {
-	// TODO: Create a unicast contributor
+	/// TODO: Create a unicast contributor
+	_ucc = App->agentContainer->createUCC(node(), contributedItemId(), constraintItemId());
+	iLog << "UCC Created";
 }
 
 void MCC::destroyChildUCC()
