@@ -1,8 +1,7 @@
 #pragma once
 #include "Agent.h"
 
-class UCC :
-	public Agent
+class UCC :	public Agent
 {
 public:
 
@@ -10,12 +9,20 @@ public:
 	UCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId);
 	~UCC();
 
+public:
+
 	// Agent methods
 	void update() override { }
 	void stop() override;
 	UCC* asUCC() override { return this; }
 	void OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader, InputMemoryStream &stream) override;
+	bool Finished()const;
 
-	// TODO
+public:
+
+	bool negotiation_result = false;
+	uint16_t contributedItemId;
+	uint16_t constraintItemId;
+
 };
 

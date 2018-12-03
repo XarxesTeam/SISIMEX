@@ -37,15 +37,19 @@ private:
 
 	bool queryMCCsForItem(int itemId);
 
-	uint16_t _requestedItemId;
-	uint16_t _contributedItemId;
+	void createChildUCP(AgentLocation& uccAgent);
+	void removeChildUCP();
 
+private:
+	
 	int _mccRegisterIndex = 0; /**< Iterator through _mccRegisters. */
 	std::vector<AgentLocation> _mccRegisters; /**< MCCs returned by the YP. */
 
-	unsigned int _searchDepth;
+	UCPPtr _ucp; //Child UCP
+	unsigned int _searchDepth = 0;
+	bool negotiation_result = false;
 
-	// TODO: Add extra attributes and methods?
-	void createChildUCP(AgentLocation& uccAgent);
+	uint16_t _requestedItemId;
+	uint16_t _contributedItemId;
 };
 

@@ -48,7 +48,21 @@ void MCC::update()
 
 		// TODO: Handle other states
 	case ST_NEGOTIATING:
-		// Do nothing ?
+		if (_ucc->Finished() == true)
+		{
+			negotiation_result = _ucc->negotiation_result;
+			
+			removeChildUCC();
+
+			if (negotiation_result == false)
+			{
+				setState(ST_FINISHED);
+			}
+			else
+			{
+				setState(ST_IDLE);
+			}
+		}
 		break;
 
 	case ST_FINISHED:
@@ -59,7 +73,7 @@ void MCC::update()
 void MCC::stop()
 {
 	// Destroy hierarchy below this agent (only a UCC, actually)
-	destroyChildUCC();
+	removeChildUCC(); //Call child ucc stop
 
 	unregisterFromYellowPages();
 	setState(ST_FINISHED);
@@ -104,8 +118,11 @@ void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 			mccResponsePacket.accepted = true;
 			createChildUCC();
 			uccAgent.agentId = _ucc->id();
-			// TODO: uccAgent hosts and IP ?????
+			uccAgent.hostIP = socket->RemoteAddress().GetIPString();
+			uccAgent.hostPort = LISTEN_PORT_AGENTS;
+			
 			mccResponsePacket.uccAgent = uccAgent;
+			
 			setState(ST_NEGOTIATING);
 			iLog << "Starting negotiating";
 		}
@@ -138,7 +155,7 @@ bool MCC::negotiationAgreement() const
 {
 	// If this agent finished, means that it was an agreement
 	// Otherwise, it would return to state ST_IDLE
-	return negotiationFinished();
+	return negotiation_result;
 }
 
 bool MCC::registerIntoYellowPages()
@@ -180,11 +197,18 @@ void MCC::unregisterFromYellowPages()
 void MCC::createChildUCC()
 {
 	/// TODO: Create a unicast contributor
+	_ucc.reset();
 	_ucc = App->agentContainer->createUCC(node(), contributedItemId(), constraintItemId());
 	iLog << "UCC Created";
 }
 
-void MCC::destroyChildUCC()
+void MCC::removeChildUCC()
 {
 	// TODO: Destroy the unicast contributor child
+	if (_ucc.get() != nullptr)
+	{
+		_ucc->stop();
+		_ucc.reset();
+		iLog << "UCC Removed";
+	}
 }

@@ -14,6 +14,8 @@ public:
 	MCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId);
 	~MCC();
 
+public:
+
 	// Agent methods
 	void update() override;
 	void stop() override;
@@ -31,18 +33,16 @@ public:
 	// Whether or not there was a negotiation agreement
 	bool negotiationAgreement() const;
 
+	bool registerIntoYellowPages();
+	void unregisterFromYellowPages();
+	void createChildUCC();
+	void removeChildUCC();
+
 private:
 
-	bool registerIntoYellowPages();
-	
-	void unregisterFromYellowPages();
-
-	void createChildUCC();
-
-	void destroyChildUCC();
-
+	UCCPtr _ucc; // Child UCC
 	uint16_t _contributedItemId; /**< The contributed item. */
 	uint16_t _constraintItemId; /**< The constraint item. */
-
-	UCCPtr _ucc; /**< Child UCC. */
+	bool negotiation_result = false;
+	
 };

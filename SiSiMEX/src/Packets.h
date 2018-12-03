@@ -19,13 +19,15 @@ enum class PacketType
 	ReturnMCCsForItem,
 	
 	// MCP <-> MCC
-	/// TODO
 	NegotiationMCPPetition,
 	MCCNegotiationResponse,
 	
 	// UCP <-> UCC
-	// TODO
-	
+	UCPItemRequest,
+	UCPConstrainRequest,
+	UCCConstrainRequestConclusion,
+	UCCNegotiationConclusion,
+
 	Last
 };
 
@@ -134,5 +136,23 @@ public:
 
 
 // UCP <-> UCC
+using PacketUCPItemRequest = PacketRegisterMCC; //Used to create a class with the same content
+using PacketUCPConstrainRequest = PacketRegisterMCC;
 
-// TODO
+class PacketUCPConstrainRequestConclusion
+{
+public:
+
+	bool negotiation_result = false;
+
+	void Read(InputMemoryStream &stream) 
+	{
+		stream.Read(negotiation_result);
+	}
+	void Write(OutputMemoryStream &stream) 
+	{
+		stream.Write(negotiation_result);
+	}
+};
+
+using PacketNegotiationConclusion = PacketUCPConstrainRequestConclusion;
