@@ -452,8 +452,10 @@ void ModuleNodeCluster::runSystem()
 			node->itemList().addItem(mcc->constraintItemId());
 			mcc->stop();
 			iLog << "MCC exchange at Node " << node->id() << ":"
-				<< " -" << mcc->contributedItemId()
-				<< " +" << mcc->constraintItemId();
+				<< " - " << node->getItemName(mcc->contributedItemId()).c_str()
+				<< " + " << node->getItemName(mcc->constraintItemId()).c_str();
+				//<< " -" << mcc->contributedItemId()
+				//<< " +" << mcc->constraintItemId();
 		}
 
 		// Update ItemList with MCPs that found a solution
@@ -467,8 +469,8 @@ void ModuleNodeCluster::runSystem()
 				node->itemList().addItem(mcp->requestedItemId());
 				node->itemList().removeItem(mcp->contributedItemId());
 				iLog << "MCP exchange at Node " << node->id() << ":"
-					<< " -" << mcp->contributedItemId()
-					<< " +" << mcp->requestedItemId();
+					<< " - " << node->getItemName(mcp->contributedItemId()).c_str()
+					<< " + " << node->getItemName(mcp->requestedItemId()).c_str();
 			}
 			else
 			{
