@@ -3,6 +3,7 @@
 #include "Application.h"
 #include "ModuleAgentContainer.h"
 
+#define MAX_DEPTH 6
 
 // TODO: Make an enum with the states
 enum UCP_State
@@ -16,9 +17,8 @@ enum UCP_State
 	UCP_FINISHED
 };
 
-UCP::UCP(Node *node, uint16_t requestedItemId, uint16_t _contributedItemId, const AgentLocation &uccLocation, unsigned int depth) :	Agent(node), requestedItemId(requestedItemId), contributedItemId(_contributedItemId), uccLocation(uccLocation), depth(depth)
+UCP::UCP(Node * node, uint16_t _currentItemsNum, uint16_t requestedItemId, uint16_t requestedItemsNum, uint16_t contributedItemId, uint16_t contributedItemsNum, const AgentLocation & uccAgent, unsigned int searchDepth) :	Agent(node), _currentItemsNum(_currentItemsNum), _requestedItemId(requestedItemId), _requestedItemsNum(requestedItemsNum), _contributedItemId(contributedItemId), _contributedItemsNum(contributedItemsNum), uccAgent(uccAgent), depth(searchDepth)
 {
-	/// TODO: Save input parameters
 	setState(UCP_INIT);
 }
 
@@ -33,49 +33,52 @@ void UCP::update()
 	{
 	case UCP_State::UCP_INIT:
 	{
+		setState(UCP_WAITING_ITEM_REQUEST);
+
 		PacketHeader header;
 		header.packetType = PacketType::UCPItemRequest;
-		header.dstAgentId = uccLocation.agentId;
+		header.dstAgentId = uccAgent.agentId;
 		header.srcAgentId = id();
 
 		PacketUCPItemRequest ucp_item_request;
-		ucp_item_request.itemId = requestedItemId;
+		ucp_item_request.itemId = _requestedItemId;
 
 		OutputMemoryStream stream;
 		header.Write(stream);
 		ucp_item_request.Write(stream);
-		
-		sendPacketToAgent(uccLocation.hostIP, uccLocation.hostPort, stream);
 
-		setState(UCP_WAITING_ITEM_REQUEST);
+		sendPacketToAgent(uccAgent.hostIP, uccAgent.hostPort, stream);
 	}
 	break;
 
 	case UCP_State::UCP_CHECK_CONSTRAIN:
 	{
-		if (_mcp != nullptr && _mcp->negotiationFinished())
+		if (_mcp->negotiationFinished())
 		{
+			setState(UCP_SEND_CONSTRAIN);
+			
 			PacketHeader header;
 			header.packetType = PacketType::UCCConstrainRequestConclusion;
-			header.dstAgentId = uccLocation.agentId;
 			header.srcAgentId = id();
-
-			PacketUCPConstrainRequestConclusion ucp_constrain_request_conclusion;
-			ucp_constrain_request_conclusion.negotiation_result = _mcp->negotiationAgreement();
+			header.dstAgentId = uccAgent.agentId;
+			
+			PacketUCPConstrainRequestConclusion constrainRequestConclusion;
+			constrainRequestConclusion.constrain_num = _requestedItemsNum;
+			constrainRequestConclusion.negotiation_result = _mcp->negotiationAgreement();
+			constrainRequestConclusion.contributed_num = _contributedItemsNum;
 
 			OutputMemoryStream stream;
 			header.Write(stream);
-			ucp_constrain_request_conclusion.Write(stream);
-
-			sendPacketToAgent(uccLocation.hostIP, uccLocation.hostPort, stream);
+			constrainRequestConclusion.Write(stream);
+			
+			sendPacketToAgent(uccAgent.hostIP, uccAgent.hostPort, stream);
 		}
 	}
+	break;
 
 	case UCP_State::UCP_FINISHED:
-	{
 		removeChildMCP();
-	}
-	break;
+		break;
 	}
 }
 
@@ -83,7 +86,6 @@ void UCP::stop()
 {
 	// TODO: Destroy search hierarchy below this agent
 	removeChildMCP(); //This call child mcp stop
-
 	destroy();
 }
 
@@ -97,53 +99,72 @@ void UCP::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 	{
 		if (state() == UCP_WAITING_ITEM_REQUEST)
 		{
-			PacketUCPItemRequest ucp_item_request;
-			ucp_item_request.Read(stream);
-
 			PacketHeader header;
 			header.packetType = PacketType::UCCConstrainRequestConclusion;
-			header.dstAgentId = packetHeader.srcAgentId;
 			header.srcAgentId = id();
+			header.dstAgentId = packetHeader.srcAgentId;
 
-			PacketUCPConstrainRequestConclusion ucp_constrain_request_conclusion;
+			PacketUCPConstrainRequest item_request;
+			PacketUCPConstrainRequestConclusion constrain_result;
 
-			if (depth > 10)
+			item_request.Read(stream);
+
+			OutputMemoryStream stream;
+
+
+			if (item_request.itemId == _contributedItemId)
 			{
-				iLog << "Search depth limit reached!";
-				ucp_constrain_request_conclusion.negotiation_result = false;
 				setState(UCP_SEND_CONSTRAIN);
+
+				constrain_result.negotiation_result = true;
+				constrain_result.constrain_num = _requestedItemsNum;
+				constrain_result.contributed_num = _contributedItemsNum;
+
+				header.Write(stream);
+				constrain_result.Write(stream);
 			}
-			else if (ucp_item_request.itemId == contributedItemId)
+			else if (depth < MAX_DEPTH)
 			{
-				iLog << "Search found same contributon item";
-				ucp_constrain_request_conclusion.negotiation_result = true;
-				setState(UCP_SEND_CONSTRAIN);
+				setState(UCP_CHECK_CONSTRAIN);
+
+				int petitionItemsNum = 0; //Need get petitin items num
+				int contributionItemsNum = 0; //Need get contrib items num
+
+				if (_currentItemsNum < contributionItemsNum)
+				{
+					setState(UCP_SEND_CONSTRAIN);
+					constrain_result.negotiation_result = false;
+
+					header.Write(stream);
+					constrain_result.Write(stream);
+				}
+				else
+				{
+					createChildMCP(item_request.itemId, petitionItemsNum, contributionItemsNum);
+				}
 			}
 			else
 			{
-				iLog << "Search contribution item don't match";
-				createChildMCP(ucp_item_request.itemId);
-				setState(UCP_CHECK_CONSTRAIN);
+				setState(UCP_SEND_CONSTRAIN);
+
+				constrain_result.negotiation_result = false;
+
+				header.Write(stream);
+				constrain_result.Write(stream);
 			}
 
-			OutputMemoryStream out_stream;
-			header.Write(out_stream);
-			ucp_constrain_request_conclusion.Write(out_stream);
-
-			socket->SendPacket(out_stream.GetBufferPtr(), out_stream.GetSize());
+			socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
 		}
 	}
 	break;
 
 	case PacketType::UCCNegotiationConclusion:
 	{
-		if(state() == UCP_SEND_CONSTRAIN)
+		if (state() == UCP_SEND_CONSTRAIN)
 		{
-			PacketNegotiationConclusion neg_conclusion;
-			neg_conclusion.Read(stream);
-
-			negotiation_result = neg_conclusion.negotiation_result;
-
+			PacketNegotiationConclusion item_ack;
+			item_ack.Read(stream);
+			negotiation_result = item_ack.negotiation_result;
 			setState(UCP_FINISHED);
 		}
 	}
@@ -151,10 +172,15 @@ void UCP::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 	}
 }
 
-void UCP::createChildMCP(uint16_t request_item_id)
+bool UCP::Finished() const
 {
-	_mcp.reset();
-	_mcp = App->agentContainer->createMCP(node(), request_item_id, contributedItemId, depth + 1);
+	return state() == UCP_FINISHED;
+}
+
+void UCP::createChildMCP(uint16_t request, uint16_t requestedItemsNum, uint16_t contributedItemsNum)
+{
+	removeChildMCP();
+	_mcp = App->agentContainer->createMCP(node(), _currentItemsNum, request, requestedItemsNum, _contributedItemId, contributedItemsNum, depth + 1);
 	iLog << "MCP Created";
 }
 
@@ -168,7 +194,3 @@ void UCP::removeChildMCP()
 	}
 }
 
-bool UCP::Finished() const
-{
-	return state() == UCP_FINISHED;
-}

@@ -6,6 +6,9 @@
 #include "Packets.h"
 #include "imgui/imgui.h"
 #include <sstream>
+#include <algorithm>
+
+#define ITEMS_LIMIT 4
 
 enum State {
 	STOPPED,
@@ -46,7 +49,6 @@ bool ModuleNodeCluster::update()
 		runSystem();
 		break;
 	case STOPPING:
-		stopSystem();
 		state = STOPPED;
 		break;
 	}
@@ -84,27 +86,12 @@ bool ModuleNodeCluster::updateGUI()
 
 		if (ImGui::Button("Create random MCCs"))
 		{
-			for (NodePtr node : _nodes)
+			for (AgentPtr agent : App->agentContainer->allAgents())
 			{
-				for (ItemId contributedItem = 0; contributedItem < MAX_ITEMS; ++contributedItem)
-				{
-					if (node->itemList().numItemsWithId(contributedItem) > 1)
-					{
-						unsigned int numItemsToContribute = node->itemList().numItemsWithId(contributedItem) -  1;
-
-						for (ItemId constraintItem = 0; constraintItem < MAX_ITEMS; ++constraintItem)
-						{
-							if (node->itemList().numItemsWithId(constraintItem) == 0)
-							{
-								for (unsigned int i = 0; i < numItemsToContribute; ++i)
-								{
-									spawnMCC(node->id(), contributedItem, constraintItem);
-								}
-							}
-						}
-					}
-				}
+				agent->stop();
 			}
+
+			spawnAgentMCC();
 		}
 
 		if (ImGui::Button("Clear all agents"))
@@ -190,9 +177,9 @@ bool ModuleNodeCluster::updateGUI()
 		ImGui::Begin("Nodes/Items Matrix");
 
 		static ItemId selectedItem = 0;
+		ItemId itemId = 0U;
 		static unsigned int selectedNode = 0;
 		static int comboItem = 0;
-
 		ImGui::Text("Item ID ");
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.6f, 1.0f, 0.5f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.6f, 1.0f, 0.5f));
@@ -254,10 +241,12 @@ bool ModuleNodeCluster::updateGUI()
 		}
 
 		// Context menu to spawn agents
+		ImGui::SetNextWindowSize(ImVec2(450, 200));
 		if (ImGui::BeginPopup("ItemOps"))
 		{
 			int numberOfItems = _nodes[selectedNode]->itemList().numItemsWithId(selectedItem);
-
+			int contribution_num = 1;
+			int petition_num = 1;
 			// If it is a missing item...
 			if (numberOfItems == 0)
 			{
@@ -287,10 +276,24 @@ bool ModuleNodeCluster::updateGUI()
 					ImGui::Text(" - Petition: %d", requestedItem);
 
 					ImGui::Combo("Contribution", &comboItem, (const char **)&comboCStrings[0], (int)comboCStrings.size());
-					if (ImGui::Button("Spawn MCP")) {
-						int contributedItem = itemIds[comboItem];
-						spawnMCP(selectedNode, requestedItem, contributedItem);
-						ImGui::CloseCurrentPopup();
+					
+					if (ImGui::Button("Spawn MCP"))
+					{
+						int _currentItemsNum = _nodes[selectedNode]->itemList().numItemsWithId(itemIds[comboItem]);
+
+						if (_currentItemsNum >= contribution_num)
+						{
+							for (AgentPtr agent : App->agentContainer->allAgents())
+							{
+								agent->stop();
+							}
+
+							spawnAgentMCC();
+							_interactions_on_work.clear();
+							spawnMCP(selectedNode, _currentItemsNum, requestedItem, petition_num, itemIds[comboItem], contribution_num);
+							
+							ImGui::CloseCurrentPopup();
+						}
 					}
 				}
 				else
@@ -317,6 +320,22 @@ bool ModuleNodeCluster::stop()
 	return true;
 }
 
+bool ModuleNodeCluster::CheckAgentInteraction(uint16_t agendtTD, uint16_t requested_item)
+{
+	return std::find(_interactions_on_work[agendtTD].begin(), _interactions_on_work[agendtTD].end(), requested_item) == _interactions_on_work[agendtTD].end();
+}
+
+void ModuleNodeCluster::AddNegotation(uint16_t agendtTD, uint16_t requested_item)
+{
+	_interactions_on_work[agendtTD].push_back(requested_item);
+}
+
+void ModuleNodeCluster::RemoveNegotiation(uint16_t agendtTD, uint16_t requested_item)
+{
+	_interactions_on_work[agendtTD].erase(std::remove(_interactions_on_work[agendtTD].begin(), _interactions_on_work[agendtTD].end(), requested_item), _interactions_on_work[agendtTD].end());
+}
+
+
 bool ModuleNodeCluster::cleanUp()
 {
 	return true;
@@ -329,8 +348,6 @@ void ModuleNodeCluster::OnAccepted(TCPSocketPtr socket)
 
 void ModuleNodeCluster::OnPacketReceived(TCPSocketPtr socket, InputMemoryStream & stream)
 {
-	//iLog << "OnPacketReceived";
-
 	PacketHeader packetHead;
 	packetHead.Read(stream);
 
@@ -349,6 +366,41 @@ void ModuleNodeCluster::OnPacketReceived(TCPSocketPtr socket, InputMemoryStream 
 void ModuleNodeCluster::OnDisconnected(TCPSocketPtr socket)
 {
 	// Nothing to do
+}
+
+void ModuleNodeCluster::spawnAgentMCC()
+{
+	for (NodePtr node : _nodes)
+	{
+		for (ItemId contributedItem = 0; contributedItem < MAX_ITEMS; ++contributedItem)
+		{
+			if (node->itemList().numItemsWithId(contributedItem) > 1)
+			{
+				for (ItemId constraintItem = 0; constraintItem < MAX_ITEMS; ++constraintItem)
+				{
+					if (node->itemList().numItemsWithId(constraintItem) == 0)
+					{
+						int numItemsToContribute = node->itemList().numItemsWithId(contributedItem);
+						int _numItemsToContribute = numItemsToContribute;
+						
+						for (int i = 0; i < numItemsToContribute; i += ITEMS_LIMIT)
+						{
+							if (_numItemsToContribute >= ITEMS_LIMIT)
+							{
+								_numItemsToContribute -= ITEMS_LIMIT;
+
+								spawnMCC(node->id(), contributedItem, constraintItem, _numItemsToContribute);
+							}
+							else
+							{
+								spawnMCC(node->id(), contributedItem, constraintItem, _numItemsToContribute);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 bool ModuleNodeCluster::startSystem()
@@ -403,7 +455,7 @@ bool ModuleNodeCluster::startSystem()
 				itemId = rand() % MAX_ITEMS;
 			}
 			_nodes[i]->itemList().removeItem(itemId);
-			_nodes[(i + 1) % MAX_NODES]->itemList().addItem(itemId);
+			_nodes[(i + 1) % MAX_NODES]->itemList().addItem(itemId, rand() % MAX_ITEMS);
 		}
 	}
 #else
@@ -425,12 +477,10 @@ bool ModuleNodeCluster::startSystem()
 #	define CONTRIBUTION(x) x
 #	define CONSTRAINT(x) x
 
-	spawnMCC(NODE(1), CONTRIBUTION(1), CONSTRAINT(2)); // Node 1 offers 1 but wants 2
-	spawnMCC(NODE(2), CONTRIBUTION(2), CONSTRAINT(3)); // Node 2 offers 2 but wants 3
-	spawnMCC(NODE(3), CONTRIBUTION(3), CONSTRAINT(0)); // Node 3 offers 3 but wants 0
+	spawnMCC(NODE(1), CONSTRAINT(2), CONTRIBUTION(1)); // Node 1 offers 1 but wants 2
+	spawnMCC(NODE(2), CONSTRAINT(3), CONTRIBUTION(2)); // Node 2 offers 2 but wants 3
+	spawnMCC(NODE(3), CONSTRAINT(0), CONTRIBUTION(3)); // Node 3 offers 3 but wants 0
 
-	//spawnMCC(0, 0); // Node 0 offers 0
-	//spawnMCP(0, 1); // Node 0 wants  1
 #endif
 
 	return true;
@@ -448,14 +498,18 @@ void ModuleNodeCluster::runSystem()
 		if (mcc != nullptr && mcc->negotiationFinished())
 		{
 			Node *node = mcc->node();
-			node->itemList().removeItem(mcc->contributedItemId());
-			node->itemList().addItem(mcc->constraintItemId());
-			mcc->stop();
+			node->itemList().removeItem(mcc->contributedItemId(), mcc->contributedItemsNum());
+			node->itemList().addItem(mcc->constraintItemId(), mcc->constrainItemsNum());
+
+			iLog << "MCC exchange at Node " << node->id() << ":" << " -" << mcc->contributedItemId() << ":" << mcc->contributedItemsNum() << " +" << mcc->constraintItemId() << ":" << mcc->constrainItemsNum();
+
 			iLog << "MCC exchange at Node " << node->id() << ":"
 				<< " - " << node->getItemName(mcc->contributedItemId()).c_str()
-				<< " + " << node->getItemName(mcc->constraintItemId()).c_str();
-				//<< " -" << mcc->contributedItemId()
-				//<< " +" << mcc->constraintItemId();
+				<< ":" << mcc->contributedItemsNum()
+				<< " + " << node->getItemName(mcc->constraintItemId()).c_str()
+				<< ":" << mcc->constrainItemsNum();
+
+			mcc->stop();
 		}
 
 		// Update ItemList with MCPs that found a solution
@@ -466,17 +520,21 @@ void ModuleNodeCluster::runSystem()
 
 			if (mcp->negotiationAgreement())
 			{
-				node->itemList().addItem(mcp->requestedItemId());
-				node->itemList().removeItem(mcp->contributedItemId());
+				node->itemList().addItem(mcp->requestedItemId(), mcp->requestedItemsNum());
+				node->itemList().removeItem(mcp->contributedItemId(), mcp->contributedItemsNum());
 				iLog << "MCP exchange at Node " << node->id() << ":"
 					<< " - " << node->getItemName(mcp->contributedItemId()).c_str()
-					<< " + " << node->getItemName(mcp->requestedItemId()).c_str();
+					<< " + " << node->getItemName(mcp->requestedItemId()).c_str()
+					<< " -" << mcp->contributedItemId() << ":" << mcp->contributedItemsNum()
+					<< " +" << mcp->requestedItemId() << ":" << mcp->requestedItemsNum();
 			}
 			else
 			{
 				wLog << "MCP exchange at Node " << node->id() << " not found:"
-					<< " -" << mcp->contributedItemId()
-					<< " +" << mcp->requestedItemId();
+					<< " -" << mcp->contributedItemId() 
+					<< ":" << mcp->contributedItemsNum()
+					<< " +" << mcp->requestedItemId() 
+					<< ":" << mcp->requestedItemsNum();
 			}
 			mcp->stop();
 		}
@@ -502,30 +560,28 @@ void ModuleNodeCluster::runSystem()
 	}
 }
 
-void ModuleNodeCluster::stopSystem()
-{
-}
-
-void ModuleNodeCluster::spawnMCP(int nodeId, int requestedItemId, int contributedItemId)
+void ModuleNodeCluster::spawnMCP(int nodeId, int _currentItemsNum, int requestedItemId, int requestedItemsNum, int contributedItemId, int contributedItemsNum)
 {
 	dLog << "Spawn MCP - node " << nodeId << " - req. " << requestedItemId << " - contrib. " << contributedItemId;
 	if (nodeId >= 0 && nodeId < (int)_nodes.size()) {
 		NodePtr node = _nodes[nodeId];
-		App->agentContainer->createMCP(node.get(), requestedItemId, contributedItemId, 0);
+		App->agentContainer->createMCP(node.get(), _currentItemsNum, requestedItemId, requestedItemsNum, contributedItemId, contributedItemsNum, 0);
 	}
 	else {
 		wLog << "Could not find node with ID " << nodeId;
 	}
 }
 
-void ModuleNodeCluster::spawnMCC(int nodeId, int contributedItemId, int constraintItemId)
+void ModuleNodeCluster::spawnMCC(int nodeId, int contributedItemId, int constraintItemId, int contributedItemsNum)
 {
 	dLog << "Spawn MCC - node " << nodeId << " contrib. " << contributedItemId << " - constr. " << constraintItemId;
 	if (nodeId >= 0 && nodeId < (int)_nodes.size()) {
 		NodePtr node = _nodes[nodeId];
-		App->agentContainer->createMCC(node.get(), contributedItemId, constraintItemId);
+		App->agentContainer->createMCC(node.get(), contributedItemId, constraintItemId, contributedItemsNum);
 	}
 	else {
 		wLog << "Could not find node with ID " << nodeId;
 	}
 }
+
+

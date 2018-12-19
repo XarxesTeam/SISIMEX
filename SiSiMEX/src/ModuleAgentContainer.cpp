@@ -14,30 +14,30 @@ ModuleAgentContainer::~ModuleAgentContainer()
 {
 }
 
-MCCPtr ModuleAgentContainer::createMCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId)
+MCCPtr ModuleAgentContainer::createMCC(Node * node, uint16_t contributedItemId, uint16_t constraintItemId, uint16_t _itemsNum)
 {
-	MCCPtr mcc(new MCC(node, contributedItemId, constraintItemId));
+	MCCPtr mcc(new MCC(node, contributedItemId, constraintItemId, _itemsNum));
 	addAgent(mcc);
 	return mcc;
 }
 
-MCPPtr ModuleAgentContainer::createMCP(Node *node, uint16_t requestedItemId, uint16_t contributedItemId, unsigned int searchDepth)
+MCPPtr ModuleAgentContainer::createMCP(Node * node, uint16_t _currentItemsNum, uint16_t requestedItemId, uint16_t requestedItemsNum, uint16_t contributedItemId, uint16_t contributedItemsNum, unsigned int searchDepth)
 {
-	MCPPtr mcp(new MCP(node, requestedItemId, contributedItemId, searchDepth));
+	MCPPtr mcp(new MCP(node, _currentItemsNum, requestedItemId, requestedItemsNum, contributedItemId, contributedItemsNum, searchDepth));
 	addAgent(mcp);
 	return mcp;
 }
 
-UCCPtr ModuleAgentContainer::createUCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId)
+UCCPtr ModuleAgentContainer::createUCC(Node * node, uint16_t contributedItemId, uint16_t constraintItemId, uint16_t contributedItemsNum)
 {
-	UCCPtr ucc(new UCC(node, contributedItemId, constraintItemId));
+	UCCPtr ucc(new UCC(node, contributedItemId, constraintItemId, contributedItemsNum));
 	addAgent(ucc);
 	return ucc;
 }
 
-UCPPtr ModuleAgentContainer::createUCP(Node *node, uint16_t requestedItemId, uint16_t contributedItemId, const AgentLocation &uccLocation, unsigned int searchDepth)
+UCPPtr ModuleAgentContainer::createUCP(Node * node, uint16_t _currentItemsNum, uint16_t requestedItemId, uint16_t requestedItemsNum, uint16_t contributedItemId, uint16_t contributedItemsNum, const AgentLocation & uccLocation, unsigned int searchDepth)
 {
-	UCPPtr ucp(new UCP(node, requestedItemId, contributedItemId, uccLocation, searchDepth));
+	UCPPtr ucp(new UCP(node, _currentItemsNum, requestedItemId, requestedItemsNum, contributedItemId, contributedItemsNum, uccLocation, searchDepth));
 	addAgent(ucp);
 	return ucp;
 }

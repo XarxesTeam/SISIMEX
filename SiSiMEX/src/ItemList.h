@@ -8,7 +8,6 @@
  */
 using ItemId = unsigned int;
 
-
 /**
  * A list of items.
  */
@@ -24,8 +23,9 @@ public:
 	void initializeComplete();
 
 	// Methods to add and remove items to/from the list
-	void addItem(ItemId itemId);
-	void removeItem(ItemId itemId);
+	void addItem(ItemId itemId, int num = 1);
+
+	void removeItem(ItemId itemId, int num = 1);
 
 	// It returns the number of items with the given Id
 	unsigned int numItemsWithId(ItemId itemId);
@@ -38,7 +38,6 @@ public:
 
 	// Returns the name of the item
 	std::string getItemName(unsigned int itemId) const;
-
 
 private:
 

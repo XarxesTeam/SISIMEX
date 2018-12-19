@@ -10,19 +10,18 @@ enum State
 	ST_REQUESTING_MCCs,
 	ST_ITERATING_OVER_MCCs,
 
-	// TODO: Other states
 	ST_WAITING_MCCs_RESPONSE,
 	ST_NEGOTIATING,
 
 	ST_NEGOTIATION_FINISHED
 };
 
-MCP::MCP(Node *node, uint16_t requestedItemID, uint16_t contributedItemID, unsigned int searchDepth) :
-	Agent(node),
-	_requestedItemId(requestedItemID),
-	_contributedItemId(contributedItemID),
-	_searchDepth(searchDepth),
-	_mccRegisterIndex(0)
+MCP::MCP(Node *node, uint16_t requestedItemID, uint16_t contributedItemID, unsigned int searchDepth) : Agent(node), _requestedItemId(requestedItemID), _contributedItemId(contributedItemID), _searchDepth(searchDepth)
+{
+	setState(ST_INIT);
+}
+
+MCP::MCP(Node * node, uint16_t _currentItemsNum, uint16_t requestedItemID, uint16_t requestedItemsNum, uint16_t contributedItemID, uint16_t contributedItemsNum, unsigned int searchDepth) : Agent(node), __currentItemsNum(_currentItemsNum), _requestedItemId(requestedItemID), _requestedItemsNum(requestedItemsNum), _contributedItemId(contributedItemID), _contributedItemsNum(contributedItemsNum), _searchDepth(searchDepth)
 {
 	setState(ST_INIT);
 }
@@ -45,17 +44,22 @@ void MCP::update()
 
 	case ST_ITERATING_OVER_MCCs:
 	{
-		/// TODO: Handle this state
 		if (_mccRegisters.size() > 0 && _mccRegisters.size() > _mccRegisterIndex)
 		{
-			AgentLocation curr = _mccRegisters[_mccRegisterIndex];
+			int mmcRegister = _mccRegisterIndex++;
+			AgentLocation curr = _mccRegisters[mmcRegister];
 			OutputMemoryStream stream;
 
 			PacketHeader packetHead;
 			packetHead.srcAgentId = id();
 			packetHead.dstAgentId = curr.agentId;
 			packetHead.packetType = PacketType::NegotiationMCPPetition;
+
+			PacketMCPNegotiationPetitionItemsNum mccResponsePacketNum;
+			mccResponsePacketNum.itemsNum = _requestedItemsNum;
+
 			packetHead.Write(stream);
+			mccResponsePacketNum.Write(stream);
 
 			sendPacketToAgent(curr.hostIP, curr.hostPort, stream);
 			iLog << "Negotiation Petition Sent to MCCs";
@@ -66,19 +70,16 @@ void MCP::update()
 			setState(ST_NEGOTIATION_FINISHED);
 			removeChildUCP();
 		}
-		
 	}
 	break;
-	
+
 	case ST_NEGOTIATING:
 	{
 		if (_ucp->Finished())
 		{
-			negotiation_result = _ucp->negotiation_result == true;
+			negotiation_result = _ucp->negotiation_result;
 
-			removeChildUCP();
-
-			if (negotiation_result == true)
+			if (negotiation_result)
 			{
 				setState(ST_NEGOTIATION_FINISHED);
 			}
@@ -86,6 +87,7 @@ void MCP::update()
 			{
 				setState(ST_ITERATING_OVER_MCCs);
 			}
+			removeChildUCP();
 		}
 	}
 	break;
@@ -96,8 +98,7 @@ void MCP::update()
 void MCP::stop()
 {
 	// TODO: Destroy the underlying search hierarchy (UCP->MCP->UCP->...)
-	removeChildUCP(); //This call child ucp stop
-
+	removeChildUCP();
 	destroy();
 }
 
@@ -125,9 +126,10 @@ void MCP::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 
 			// Store the returned MCCs from YP
 			_mccRegisters.swap(packetData.mccAddresses);
-			negotiation_result = false;
 
 			// Select the first MCC to negociate
+			negotiation_result = false;
+
 			_mccRegisterIndex = 0;
 			setState(ST_ITERATING_OVER_MCCs);
 
@@ -156,7 +158,6 @@ void MCP::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 			else
 			{
 				setState(ST_ITERATING_OVER_MCCs);
-				_mccRegisterIndex += 1;
 			}
 		}
 	}
@@ -197,7 +198,7 @@ bool MCP::queryMCCsForItem(int itemId)
 void MCP::createChildUCP(AgentLocation& uccAgent)
 {
 	_ucp.reset();
-	_ucp = App->agentContainer->createUCP(node(), _requestedItemId, _contributedItemId, uccAgent, _searchDepth);
+	_ucp = App->agentContainer->createUCP(node(), __currentItemsNum, _requestedItemId, _requestedItemsNum, _contributedItemId, _contributedItemsNum, uccAgent, _searchDepth);
 	iLog << "UCP Created";
 }
 

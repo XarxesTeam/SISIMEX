@@ -2,7 +2,7 @@
 #include "UCC.h"
 #include "Application.h"
 #include "ModuleAgentContainer.h"
-
+#include "ModuleNodeCluster.h"
 
 enum State
 {
@@ -10,16 +10,13 @@ enum State
 	ST_REGISTERING,
 	ST_IDLE,
 	
-	// TODO: Other states
 	ST_NEGOTIATING,
+	ST_NEGOTIATION_END,
 
 	ST_FINISHED
 };
 
-MCC::MCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId) :
-	Agent(node),
-	_contributedItemId(contributedItemId),
-	_constraintItemId(constraintItemId)
+MCC::MCC(Node * node, uint16_t contributedItemId, uint16_t constraintItemId, uint16_t _itemsNum) : Agent(node), _contributedItemId(contributedItemId), _constraintItemId(constraintItemId), _itemsNum(_itemsNum)
 {
 	setState(ST_INIT);
 }
@@ -42,31 +39,35 @@ void MCC::update()
 		}
 		break;
 
-	case ST_REGISTERING:
-		// See OnPacketReceived()
-		break;
-
-		// TODO: Handle other states
 	case ST_NEGOTIATING:
 		if (_ucc->Finished() == true)
 		{
-			negotiation_result = _ucc->negotiation_result;
-			
+			bool ucc_result = _ucc->negotiation_result;
+			uint16_t ucc_contributedItemsNum = _ucc->contributedItemsNum;
+			uint16_t ucc_constraintItemsNum = _ucc->constraintItemsNum;
+
 			removeChildUCC();
 
-			if (negotiation_result == false)
+			if (ucc_result)
 			{
-				setState(ST_FINISHED);
+				setState(ST_NEGOTIATION_END);
+				_contributedItemsNum = ucc_contributedItemsNum;
+				_constrainItemsNum = ucc_constraintItemsNum;
 			}
 			else
 			{
 				setState(ST_IDLE);
+				App->modNodeCluster->RemoveNegotiation(node()->id(), _constrainItemsNum);
 			}
 		}
 		break;
 
 	case ST_FINISHED:
+		{
 		destroy();
+		}
+		break;
+
 	}
 }
 
@@ -80,7 +81,7 @@ void MCC::stop()
 }
 
 
-void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader, InputMemoryStream &stream)
+void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader, InputMemoryStream &_stream)
 {
 	const PacketType packetType = packetHeader.packetType;
 
@@ -98,33 +99,35 @@ void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 		}
 		break;
 
-	/// TODO: Handle other packets
-
 	case PacketType::NegotiationMCPPetition:
-	{			
+	{
 		iLog << "MCC: NegotiationMCPPetition received";
 		OutputMemoryStream stream;
 		PacketHeader packetHead;
 		packetHead.dstAgentId = packetHeader.srcAgentId;
-		packetHead.srcAgentId = packetHeader.dstAgentId;
+		packetHead.srcAgentId = id();
 		packetHead.packetType = PacketType::MCCNegotiationResponse;
-		packetHead.Write(stream);
 
 		PacketMCCNegotiationResponse mccResponsePacket;
 
-		if (state() == ST_IDLE)
+		PacketMCPNegotiationPetitionItemsNum mcpNegItemsNum;
+		mcpNegItemsNum.Read(_stream);
+
+		if (state() == ST_IDLE && CheckInteractionAndItemsNum(mcpNegItemsNum.itemsNum))
 		{
-			AgentLocation uccAgent;
-			mccResponsePacket.accepted = true;
-			createChildUCC();
-			uccAgent.agentId = _ucc->id();
-			uccAgent.hostIP = socket->RemoteAddress().GetIPString();
-			uccAgent.hostPort = LISTEN_PORT_AGENTS;
-			
-			mccResponsePacket.uccAgent = uccAgent;
-			
 			setState(ST_NEGOTIATING);
 			iLog << "Starting negotiating";
+
+			App->modNodeCluster->AddNegotation(node()->id(), _contributedItemId);
+			createChildUCC();
+			
+			AgentLocation uccAgent;
+			uccAgent.hostIP = socket->RemoteAddress().GetIPString();
+			uccAgent.agentId = _ucc->id();
+			uccAgent.hostPort = LISTEN_PORT_AGENTS;
+			
+			mccResponsePacket.accepted = true;
+			mccResponsePacket.uccAgent = uccAgent;
 		}
 		else
 		{
@@ -132,8 +135,16 @@ void MCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 			iLog << "MCC can't negotiate now";
 		}
 
+		packetHead.Write(stream);
 		mccResponsePacket.Write(stream);
 		socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
+
+	}
+	break;
+	case PacketType::UnregisterMCC:
+	{
+		setState(ST_FINISHED);
+		socket->Disconnect();
 	}
 	break;
 	default:
@@ -148,14 +159,9 @@ bool MCC::isIdling() const
 
 bool MCC::negotiationFinished() const
 {
-	return state() == ST_FINISHED;
-}
-
-bool MCC::negotiationAgreement() const
-{
 	// If this agent finished, means that it was an agreement
 	// Otherwise, it would return to state ST_IDLE
-	return negotiation_result;
+	return state() == ST_NEGOTIATION_END;
 }
 
 bool MCC::registerIntoYellowPages()
@@ -194,17 +200,25 @@ void MCC::unregisterFromYellowPages()
 	sendPacketToYellowPages(stream);
 }
 
+bool MCC::CheckInteractionAndItemsNum(uint16_t num_request)
+{
+	//Check if the agent is already in the list so we can't interact with 
+	if (App->modNodeCluster->CheckAgentInteraction(node()->id(), _contributedItemId))
+	{
+		return num_request < _itemsNum;
+	}
+	return false;
+}
+
 void MCC::createChildUCC()
 {
-	/// TODO: Create a unicast contributor
 	_ucc.reset();
-	_ucc = App->agentContainer->createUCC(node(), contributedItemId(), constraintItemId());
+	_ucc = App->agentContainer->createUCC(node(), _contributedItemId, _constraintItemId, 1);
 	iLog << "UCC Created";
 }
 
 void MCC::removeChildUCC()
 {
-	// TODO: Destroy the unicast contributor child
 	if (_ucc.get() != nullptr)
 	{
 		_ucc->stop();

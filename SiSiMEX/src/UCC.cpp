@@ -8,7 +8,7 @@ enum UCC_State
 	UCC_FINISHED
 };
 
-UCC::UCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId) : Agent(node), contributedItemId(contributedItemId), constraintItemId(constraintItemId)
+UCC::UCC(Node * node, uint16_t contributedItemId, uint16_t constraintItemId, uint16_t contributedItemsNum) : Agent(node), contributedItemId(contributedItemId), constraintItemId(constraintItemId), contributedItemsNum(contributedItemsNum)
 {
 	setState(UCC_WAITING_ITEM_REQUEST);
 }
@@ -23,7 +23,7 @@ void UCC::stop()
 	destroy();
 }
 
-void UCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader, InputMemoryStream &stream)
+void UCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader, InputMemoryStream &_stream)
 {
 	PacketType packetType = packetHeader.packetType;
 
@@ -33,48 +33,52 @@ void UCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 	{
 		if (state() == UCC_WAITING_ITEM_REQUEST)
 		{
-			PacketUCPItemRequest ucp_item_request;
-			ucp_item_request.Read(stream);
+			setState(UCC_WAITING_CONSTRAIN);
 
-			if (ucp_item_request.itemId == contributedItemId)
-			{
-				PacketHeader header;
-				header.packetType = PacketType::UCPConstrainRequest;
-				header.dstAgentId = packetHeader.srcAgentId;
-				header.srcAgentId = id();
+			PacketUCPItemRequest item_request;
+			item_request.Read(_stream);
 
-				PacketUCPConstrainRequest ucp_constrain_request;
-				ucp_constrain_request.itemId = constraintItemId;
+			PacketHeader header;
+			header.packetType = PacketType::UCPConstrainRequest;
+			header.srcAgentId = id();
+			header.dstAgentId = packetHeader.srcAgentId;
 
-				OutputMemoryStream stream;
-				header.Write(stream);
-				ucp_constrain_request.Write(stream);
+			PacketUCPConstrainRequest contrain_request;
+			contrain_request.itemId = constraintItemId;
 
-				socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
+			OutputMemoryStream stream;
+			header.Write(stream);
+			contrain_request.Write(stream);
 
-				setState(UCC_WAITING_CONSTRAIN);
-			}
+			socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
 		}
 	}
 	break;
-
 	case PacketType::UCCConstrainRequestConclusion:
 	{
 		if (state() == UCC_WAITING_CONSTRAIN)
 		{
-			PacketUCPConstrainRequestConclusion ucp_constrain_request_conclusion;
-			ucp_constrain_request_conclusion.Read(stream);
-			negotiation_result = ucp_constrain_request_conclusion.negotiation_result;
+			setState(UCC_FINISHED);
+
+			PacketUCPConstrainRequestConclusion constrain_results;
+			constrain_results.Read(_stream);
+			negotiation_result = constrain_results.negotiation_result;
+			contributedItemsNum = constrain_results.constrain_num;
+			constraintItemsNum = constrain_results.contributed_num;
 
 			PacketHeader header;
 			header.packetType = PacketType::UCCNegotiationConclusion;
-			header.dstAgentId = packetHeader.srcAgentId;
 			header.srcAgentId = id();
+			header.dstAgentId = packetHeader.srcAgentId;
 
-			OutputMemoryStream out_stream;
-			header.Write(out_stream);
-			ucp_constrain_request_conclusion.Write(out_stream);
-			socket->SendPacket(out_stream.GetBufferPtr(), out_stream.GetSize());
+			PacketNegotiationConclusion negotiationConclusion;
+			negotiationConclusion.negotiation_result = negotiation_result;
+			
+			OutputMemoryStream stream;
+			header.Write(stream);
+			negotiationConclusion.Write(stream);
+			
+			socket->SendPacket(stream.GetBufferPtr(), stream.GetSize());
 		}
 	}
 	break;

@@ -23,20 +23,20 @@ void ItemList::initializeComplete()
 	numberOfMissingItems = 0;
 }
 
-void ItemList::addItem(ItemId itemId)
+void ItemList::addItem(ItemId itemId, int num)
 {
 	assert(itemId < MAX_ITEMS && "ItemsList::addItem() - itemId out of bounds.");
-	items[itemId]++;
-	numberOfItems++;
+	items[itemId] += num;
+	numberOfItems += num;
 	recomputeMissingItems();
 }
 
-void ItemList::removeItem(ItemId itemId)
+void ItemList::removeItem(ItemId itemId, int num)
 {
 	assert(itemId < MAX_ITEMS && "ItemsList::removeItem() - itemId out of bounds.");
 	assert(items[itemId] > 0 && "ItemsList::removeItem() - the list does not contain this item.");
-	items[itemId]--;
-	numberOfItems--;
+	items[itemId] -= num;
+	numberOfItems -= num;
 	recomputeMissingItems();
 }
 
@@ -156,6 +156,7 @@ std::string ItemList::getItemName(unsigned int itemId) const
 	}
 	return itemName.c_str();
 }
+
 
 void ItemList::recomputeMissingItems()
 {

@@ -17,11 +17,11 @@ enum class PacketType
 	// MCP <-> YP
 	QueryMCCsForItem,
 	ReturnMCCsForItem,
-	
+
 	// MCP <-> MCC
 	NegotiationMCPPetition,
 	MCCNegotiationResponse,
-	
+
 	// UCP <-> UCC
 	UCPItemRequest,
 	UCPConstrainRequest,
@@ -113,9 +113,6 @@ public:
 
 
 // MCP <-> MCC
-
-///TODO
-
 class PacketMCCNegotiationResponse
 {
 public:
@@ -133,7 +130,20 @@ public:
 		uccAgent.Write(stream);
 	}
 };
+class PacketMCPNegotiationPetitionItemsNum 
+{
+public:
 
+	unsigned int itemsNum;
+
+	void Read(InputMemoryStream &stream) {
+		stream.Read(itemsNum);
+
+	}
+	void Write(OutputMemoryStream &stream) {
+		stream.Write(itemsNum);
+	}
+};
 
 // UCP <-> UCC
 using PacketUCPItemRequest = PacketRegisterMCC; //Used to create a class with the same content
@@ -144,14 +154,21 @@ class PacketUCPConstrainRequestConclusion
 public:
 
 	bool negotiation_result = false;
+	unsigned int constrain_num;
+	unsigned int contributed_num;
 
-	void Read(InputMemoryStream &stream) 
+	void Read(InputMemoryStream &stream)
 	{
 		stream.Read(negotiation_result);
+		stream.Read(constrain_num);
+		stream.Read(contributed_num);
 	}
-	void Write(OutputMemoryStream &stream) 
+	void Write(OutputMemoryStream &stream)
 	{
 		stream.Write(negotiation_result);
+		stream.Write(constrain_num);
+		stream.Write(contributed_num);
+
 	}
 };
 

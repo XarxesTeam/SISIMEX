@@ -11,11 +11,11 @@ class MCC :
 public:
 
 	// Constructor and destructor
-	MCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId);
+	MCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId, uint16_t _itemsNum);
 	~MCC();
 
 public:
-
+	
 	// Agent methods
 	void update() override;
 	void stop() override;
@@ -25,13 +25,15 @@ public:
 	// Getters
 	bool isIdling() const;
 	uint16_t contributedItemId() const { return _contributedItemId; }
+	uint16_t contributedItemsNum() const { return _contributedItemsNum; }
+	
 	uint16_t constraintItemId() const { return _constraintItemId; }
+	uint16_t constrainItemsNum() const { return _constrainItemsNum; }
+	
+	bool CheckInteractionAndItemsNum(uint16_t num_request);
 
 	// Whether or not the negotiation finished
 	bool negotiationFinished() const;
-
-	// Whether or not there was a negotiation agreement
-	bool negotiationAgreement() const;
 
 	bool registerIntoYellowPages();
 	void unregisterFromYellowPages();
@@ -41,8 +43,14 @@ public:
 private:
 
 	UCCPtr _ucc; // Child UCC
+
+	uint16_t _itemsNum; 
+
 	uint16_t _contributedItemId; /**< The contributed item. */
+	uint16_t _contributedItemsNum;
+
 	uint16_t _constraintItemId; /**< The constraint item. */
-	bool negotiation_result = false;
+	uint16_t _constrainItemsNum;
+
 	
 };

@@ -11,7 +11,7 @@ class UCP :
 public:
 
 	// Constructor and destructor
-	UCP(Node *node, uint16_t requestedItemId, uint16_t contributedItemId, const AgentLocation &uccLoc, unsigned int searchDepth);
+	UCP(Node *node, uint16_t _currentItemsNum, uint16_t requestedItemId, uint16_t requestedItemsNum, uint16_t contributedItemId, uint16_t contributedItemsNum, const AgentLocation &uccLoc, unsigned int searchDepth);
 	~UCP();
 
 public:
@@ -21,16 +21,24 @@ public:
 	void stop() override;
 	UCP* asUCP() override { return this; }
 	void OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader, InputMemoryStream &stream) override;
-	void createChildMCP(uint16_t request_item_id);
+	
+	void createChildMCP(uint16_t request, uint16_t requestedItemsNum, uint16_t contributedItemsNum);
 	void removeChildMCP();
+	
 	bool Finished()const;
 
 public:
 
 	MCPPtr _mcp; //Child MCP
-	AgentLocation uccLocation;
-	uint16_t requestedItemId;
-	uint16_t contributedItemId;
+	AgentLocation uccAgent;
+	
+	uint16_t _requestedItemId;
+	uint16_t _requestedItemsNum;
+	uint16_t _contributedItemId;
+	uint16_t _contributedItemsNum;
+	
+	uint16_t _currentItemsNum;
+	
 	int depth = 0;
 	bool negotiation_result = false;
 };

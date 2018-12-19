@@ -6,7 +6,7 @@ class UCC :	public Agent
 public:
 
 	// Constructor and destructor
-	UCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId);
+	UCC(Node *node, uint16_t contributedItemId, uint16_t constraintItemId, uint16_t contributedItemsNum);
 	~UCC();
 
 public:
@@ -22,7 +22,8 @@ public:
 
 	bool negotiation_result = false;
 	uint16_t contributedItemId;
+	uint16_t contributedItemsNum;
 	uint16_t constraintItemId;
-
+	uint16_t constraintItemsNum; 
 };
 
