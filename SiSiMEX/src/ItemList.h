@@ -36,9 +36,6 @@ public:
 	// Returns the number of missing items (number of items from 0 to MAX_ITEMS -1 not in the list)
 	unsigned int numMissingItems() const;
 
-	// Returns the name of the item
-	std::string getItemName(unsigned int itemId) const;
-
 private:
 
 	// Recomputes the number of missing items after adding or removing

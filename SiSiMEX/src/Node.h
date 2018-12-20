@@ -14,7 +14,6 @@ public:
 	int id() { return _id; }
 	ItemList &itemList() { return _itemList; }
 	const ItemList &itemList() const { return _itemList; }
-	std::string getItemName(unsigned int itemId) const { return _itemList.getItemName(itemId); }
 
 private:
 

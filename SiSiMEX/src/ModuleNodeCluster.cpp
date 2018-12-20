@@ -58,6 +58,8 @@ bool ModuleNodeCluster::update()
 
 bool ModuleNodeCluster::updateGUI()
 {
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(220,500));
 	ImGui::Begin("Node cluster");
 
 	if (state == RUNNING)
@@ -173,7 +175,7 @@ bool ModuleNodeCluster::updateGUI()
 	if (state == RUNNING)
 	{
 		// NODES / ITEMS MATRIX /////////////////////////////////////////////////////////
-
+		ImGui::SetNextWindowPos(ImVec2(220, 0));
 		ImGui::Begin("Nodes/Items Matrix");
 
 		static ItemId selectedItem = 0;
@@ -188,8 +190,8 @@ bool ModuleNodeCluster::updateGUI()
 		{
 			ImGui::SameLine();
 			std::ostringstream oss;
-			oss << itemId;
-			ImGui::Button(oss.str().c_str(), ImVec2(20, 20));
+			oss << getItemName(itemId);
+			ImGui::Button(oss.str().c_str(), ImVec2(90, 20));
 			if (itemId < MAX_ITEMS - 1) ImGui::SameLine();
 		}
 		ImGui::PopStyleColor(3);
@@ -213,7 +215,7 @@ bool ModuleNodeCluster::updateGUI()
 				}
 				else
 				{
-					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 1.0f, 0.0f, 0.5f*numItems));
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.1f * numItems, 0.0f, 0.5f));
 					ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(.0f, 1.0f, 0.0f, 0.3f*numItems));
 					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(.0f, 1.0f, 0.0f, 0.2f*numItems));
 				}
@@ -223,7 +225,7 @@ bool ModuleNodeCluster::updateGUI()
 				oss << numItems;
 				oss << "##" << buttonId;
 
-				if (ImGui::Button(oss.str().c_str(), ImVec2(20, 20)))
+				if (ImGui::Button(oss.str().c_str(), ImVec2(90, 20)))
 				{
 					if (numItems == 0)
 					{
@@ -245,9 +247,11 @@ bool ModuleNodeCluster::updateGUI()
 		if (ImGui::BeginPopup("ItemOps"))
 		{
 			int numberOfItems = _nodes[selectedNode]->itemList().numItemsWithId(selectedItem);
-			int contribution_num = 1;
-			int petition_num = 1;
-			// If it is a missing item...
+			
+			static int petitionItemsNum = 1;
+			static int contributionItemsNum = 1;
+
+
 			if (numberOfItems == 0)
 			{
 				int requestedItem = selectedItem;
@@ -259,7 +263,7 @@ bool ModuleNodeCluster::updateGUI()
 					if (_nodes[selectedNode]->itemList().numItemsWithId(itemId) > 1)
 					{
 						std::ostringstream oss;
-						oss << itemId;
+						oss << getItemName(itemId);
 						comboStrings.push_back(oss.str());
 						itemIds.push_back(itemId);
 					}
@@ -270,18 +274,30 @@ bool ModuleNodeCluster::updateGUI()
 
 				if (itemIds.size() > 0)
 				{
-					ImGui::Text("Create MultiCastPetitioner?");
+					ImGui::Text("MultiCastPetitioner Creator");
+					
 					ImGui::Separator();
 					ImGui::Text("Node %d", selectedNode);
-					ImGui::Text(" - Petition: %d", requestedItem);
-
-					ImGui::Combo("Contribution", &comboItem, (const char **)&comboCStrings[0], (int)comboCStrings.size());
 					
+					ImGui::Separator();
+					ImGui::Text("Petition item: %s", getItemName(requestedItem).c_str());
+					ImGui::InputInt("Items number##1", &petitionItemsNum);
+					
+					ImGui::Separator();
+					ImGui::Combo("Contribution item", &comboItem, (const char **)&comboCStrings[0], (int)comboCStrings.size());
+					ImGui::InputInt("Items number##2", &contributionItemsNum);
+					int _currentItemsNum = _nodes[selectedNode]->itemList().numItemsWithId(itemIds[comboItem]);
+					ImGui::Text("Max %i", _currentItemsNum - 1);
+					if (contributionItemsNum > _currentItemsNum - 1)
+					{
+						contributionItemsNum = _currentItemsNum - 1;
+					}
+					
+					ImGui::Separator();
 					if (ImGui::Button("Spawn MCP"))
 					{
-						int _currentItemsNum = _nodes[selectedNode]->itemList().numItemsWithId(itemIds[comboItem]);
 
-						if (_currentItemsNum >= contribution_num)
+						if (_currentItemsNum >= contributionItemsNum)
 						{
 							for (AgentPtr agent : App->agentContainer->allAgents())
 							{
@@ -290,7 +306,7 @@ bool ModuleNodeCluster::updateGUI()
 
 							spawnAgentMCC();
 							_interactions_on_work.clear();
-							spawnMCP(selectedNode, _currentItemsNum, requestedItem, petition_num, itemIds[comboItem], contribution_num);
+							spawnMCP(selectedNode, _currentItemsNum, requestedItem, petitionItemsNum, itemIds[comboItem], contributionItemsNum);
 							
 							ImGui::CloseCurrentPopup();
 						}
@@ -504,9 +520,9 @@ void ModuleNodeCluster::runSystem()
 			iLog << "MCC exchange at Node " << node->id() << ":" << " -" << mcc->contributedItemId() << ":" << mcc->contributedItemsNum() << " +" << mcc->constraintItemId() << ":" << mcc->constrainItemsNum();
 
 			iLog << "MCC exchange at Node " << node->id() << ":"
-				<< " - " << node->getItemName(mcc->contributedItemId()).c_str()
+				<< " - " << getItemName(mcc->contributedItemId()).c_str()
 				<< ":" << mcc->contributedItemsNum()
-				<< " + " << node->getItemName(mcc->constraintItemId()).c_str()
+				<< " + " << getItemName(mcc->constraintItemId()).c_str()
 				<< ":" << mcc->constrainItemsNum();
 
 			mcc->stop();
@@ -523,8 +539,8 @@ void ModuleNodeCluster::runSystem()
 				node->itemList().addItem(mcp->requestedItemId(), mcp->requestedItemsNum());
 				node->itemList().removeItem(mcp->contributedItemId(), mcp->contributedItemsNum());
 				iLog << "MCP exchange at Node " << node->id() << ":"
-					<< " - " << node->getItemName(mcp->contributedItemId()).c_str()
-					<< " + " << node->getItemName(mcp->requestedItemId()).c_str()
+					<< " - " << getItemName(mcp->contributedItemId()).c_str()
+					<< " + " << getItemName(mcp->requestedItemId()).c_str()
 					<< " -" << mcp->contributedItemId() << ":" << mcp->contributedItemsNum()
 					<< " +" << mcp->requestedItemId() << ":" << mcp->requestedItemsNum();
 			}
@@ -584,4 +600,101 @@ void ModuleNodeCluster::spawnMCC(int nodeId, int contributedItemId, int constrai
 	}
 }
 
-
+std::string ModuleNodeCluster::getItemName(unsigned int itemId) const
+{
+	std::string itemName = "No Name";
+	switch (itemId)
+	{
+	case 0:
+		itemName = "Stone";
+		break;
+	case 1:
+		itemName = "Granite";
+		break;
+	case 2:
+		itemName = "Pol Granite";
+		break;
+	case 3:
+		itemName = "Pol Diorite";
+		break;
+	case 4:
+		itemName = "Andesite";
+		break;
+	case 5:
+		itemName = "Pol Andesite";
+		break;
+	case 6:
+		itemName = "Grass";
+		break;
+	case 7:
+		itemName = "Dirt";
+		break;
+	case 8:
+		itemName = "Coarse Dirt";
+		break;
+	case 9:
+		itemName = "Podzol";
+		break;
+	case 10:
+		itemName = "Cobblestone";
+		break;
+	case 11:
+		itemName = "OakWood Plank";
+		break;
+	case 12:
+		itemName = "Spruce Wood Plank";
+		break;
+	case 13:
+		itemName = "Birch Wood Plank";
+		break;
+	case 14:
+		itemName = "Jungle Wood Plank";
+		break;
+	case 15:
+		itemName = "Acacia Wood Plank";
+		break;
+	case 16:
+		itemName = "Dark Oak Wood Plank";
+		break;
+	case 17:
+		itemName = "Oak Sapling";
+		break;
+	case 18:
+		itemName = "Spruce Sapling";
+		break;
+	case 19:
+		itemName = "Birch Sapling";
+		break;
+	case 20:
+		itemName = "Jungle Sapling";
+		break;
+	case 21:
+		itemName = "Acacia Sapling";
+		break;
+	case 22:
+		itemName = "Dark Oak Sapling";
+		break;
+	case 23:
+		itemName = "Bedrock";
+		break;
+	case 24:
+		itemName = "FlowingWater";
+		break;
+	case 25:
+		itemName = "StillWater";
+		break;
+	case 26:
+		itemName = "FlowingLava";
+		break;
+	case 27:
+		itemName = "StillLava";
+		break;
+	case 28:
+		itemName = "Sand";
+		break;
+	case 29:
+		itemName = "RedSand";
+		break;
+	}
+	return itemName.c_str();
+}

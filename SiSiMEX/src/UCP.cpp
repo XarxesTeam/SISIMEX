@@ -140,7 +140,7 @@ void UCP::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 				}
 				else
 				{
-					createChildMCP(item_request.itemId, petitionItemsNum, contributionItemsNum);
+					createChildMCP(item_request.itemId, petitionItemsNum, _contributedItemsNum);
 				}
 			}
 			else

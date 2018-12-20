@@ -50,4 +50,6 @@ private:
 
 	int state = 0; /**< State machine. */
 	std::map<uint16_t, std::vector<uint16_t>> _interactions_on_work; /**< Interactions are current in process */
+
+	std::string getItemName(unsigned int itemId) const;
 };

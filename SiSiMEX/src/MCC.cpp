@@ -213,7 +213,7 @@ bool MCC::CheckInteractionAndItemsNum(uint16_t num_request)
 void MCC::createChildUCC()
 {
 	_ucc.reset();
-	_ucc = App->agentContainer->createUCC(node(), _contributedItemId, _constraintItemId, 1);
+	_ucc = App->agentContainer->createUCC(node(), _contributedItemId, _constraintItemId,_contributedItemsNum);
 	iLog << "UCC Created";
 }
 
