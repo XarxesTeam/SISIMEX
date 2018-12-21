@@ -11,6 +11,8 @@ bool ModuleLogView::init()
 
 bool ModuleLogView::updateGUI()
 {
+	ImGui::SetNextWindowPos(ImVec2(220, 0));
+	ImGui::SetNextWindowSize(ImVec2(500, 200));
 	ImGui::Begin("Log View");
 
 	if (ImGui::Button("Clear"))

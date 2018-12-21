@@ -4,6 +4,7 @@
 #include "Packets.h"
 #include "Log.h"
 #include "imgui/imgui.h"
+#include "ModuleWindow.h"
 
 enum State {
 	STOPPED,
@@ -53,6 +54,8 @@ bool ModuleYellowPages::update()
 
 bool ModuleYellowPages::updateGUI()
 {
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	ImGui::SetNextWindowSize(ImVec2(220, 500));
 	ImGui::Begin("Yellow Pages");
 
 	// Number of sockets

@@ -175,7 +175,8 @@ bool ModuleNodeCluster::updateGUI()
 	if (state == RUNNING)
 	{
 		// NODES / ITEMS MATRIX /////////////////////////////////////////////////////////
-		ImGui::SetNextWindowPos(ImVec2(220, 0));
+		ImGui::SetNextWindowPos(ImVec2(220, 200));
+		ImGui::SetNextWindowSize(ImVec2(1050, 300));
 		ImGui::Begin("Nodes/Items Matrix");
 
 		static ItemId selectedItem = 0;
@@ -397,7 +398,10 @@ void ModuleNodeCluster::spawnAgentMCC()
 					if (node->itemList().numItemsWithId(constraintItem) == 0)
 					{
 						int numItemsToContribute = node->itemList().numItemsWithId(contributedItem);
-						int _numItemsToContribute = numItemsToContribute;
+						
+						spawnMCC(node->id(), contributedItem, constraintItem, numItemsToContribute);
+
+/*						int _numItemsToContribute = numItemsToContribute;
 						
 						for (int i = 0; i < numItemsToContribute; i += ITEMS_LIMIT)
 						{
@@ -405,13 +409,12 @@ void ModuleNodeCluster::spawnAgentMCC()
 							{
 								_numItemsToContribute -= ITEMS_LIMIT;
 
-								spawnMCC(node->id(), contributedItem, constraintItem, _numItemsToContribute);
 							}
 							else
 							{
 								spawnMCC(node->id(), contributedItem, constraintItem, _numItemsToContribute);
 							}
-						}
+						}*/
 					}
 				}
 			}
