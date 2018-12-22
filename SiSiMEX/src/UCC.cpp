@@ -35,9 +35,6 @@ void UCC::OnPacketReceived(TCPSocketPtr socket, const PacketHeader &packetHeader
 		{
 			setState(UCC_WAITING_CONSTRAIN);
 
-			PacketUCPItemRequest item_request;
-			item_request.Read(_stream);
-
 			PacketHeader header;
 			header.packetType = PacketType::UCPConstrainRequest;
 			header.srcAgentId = id();

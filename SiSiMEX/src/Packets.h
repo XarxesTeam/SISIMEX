@@ -146,7 +146,6 @@ public:
 };
 
 // UCP <-> UCC
-using PacketUCPItemRequest = PacketRegisterMCC; //Used to create a class with the same content
 using PacketUCPConstrainRequest = PacketRegisterMCC;
 
 class PacketUCPConstrainRequestConclusion

@@ -40,12 +40,9 @@ void UCP::update()
 		header.dstAgentId = uccAgent.agentId;
 		header.srcAgentId = id();
 
-		PacketUCPItemRequest ucp_item_request;
-		ucp_item_request.itemId = _requestedItemId;
-
 		OutputMemoryStream stream;
 		header.Write(stream);
-		ucp_item_request.Write(stream);
+		//ucp_item_request.Write(stream);
 
 		sendPacketToAgent(uccAgent.hostIP, uccAgent.hostPort, stream);
 	}
