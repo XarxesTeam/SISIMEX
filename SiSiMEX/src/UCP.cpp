@@ -42,7 +42,6 @@ void UCP::update()
 
 		OutputMemoryStream stream;
 		header.Write(stream);
-		//ucp_item_request.Write(stream);
 
 		sendPacketToAgent(uccAgent.hostIP, uccAgent.hostPort, stream);
 	}
